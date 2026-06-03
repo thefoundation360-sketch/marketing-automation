@@ -1,0 +1,80 @@
+name: Weekly Newsletters
+
+on:
+  schedule:
+    # Every Monday at 6 AM UTC — newsletters go out before clients wake up
+    - cron: '0 6 * * 1'
+  workflow_dispatch: {}
+
+jobs:
+  send-newsletters:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Restore database
+        run: |
+          if [ -f state.db.b64 ]; then
+            base64 -d state.db.b64 > state.db
+          fi
+
+      - name: Generate newsletters
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          FROM_EMAIL: ${{ secrets.FROM_EMAIL }}
+          BUSINESS_NAME: ${{ secrets.BUSINESS_NAME }}
+          OWNER_EMAIL: ${{ secrets.OWNER_EMAIL }}
+          TARGET_NICHE: ${{ secrets.TARGET_NICHE }}
+          TARGET_CITY: ${{ secrets.TARGET_CITY }}
+          TARGET_STATE: ${{ secrets.TARGET_STATE }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          STRIPE_PRICE_ID: ${{ secrets.STRIPE_PRICE_ID }}
+          OUTREACH_FROM_EMAIL: ${{ secrets.OUTREACH_FROM_EMAIL }}
+          OUTREACH_FROM_NAME: ${{ secrets.OUTREACH_FROM_NAME }}
+        run: python main.py run --agent content
+
+      - name: Send newsletters
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          FROM_EMAIL: ${{ secrets.FROM_EMAIL }}
+          BUSINESS_NAME: ${{ secrets.BUSINESS_NAME }}
+          OWNER_EMAIL: ${{ secrets.OWNER_EMAIL }}
+          TARGET_NICHE: ${{ secrets.TARGET_NICHE }}
+          TARGET_CITY: ${{ secrets.TARGET_CITY }}
+          TARGET_STATE: ${{ secrets.TARGET_STATE }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          STRIPE_PRICE_ID: ${{ secrets.STRIPE_PRICE_ID }}
+          OUTREACH_FROM_EMAIL: ${{ secrets.OUTREACH_FROM_EMAIL }}
+          OUTREACH_FROM_NAME: ${{ secrets.OUTREACH_FROM_NAME }}
+        run: python main.py run --agent delivery
+
+      - name: Backup database
+        if: always()
+        run: |
+          if [ -f state.db ]; then
+            base64 state.db > state.db.b64
+          fi
+
+      - name: Commit database backup
+        if: always()
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: newsletter run complete [skip ci]"
+          file_pattern: "state.db.b64"
+          commit_user_name: "NicheWire Bot"
+          commit_user_email: "bot@nichewire.local"
