@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Affiliate Link Manager — Backcountry Brotherhood</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #0d1117;
+      --surface:     #161b22;
+      --surface2:    #1c2128;
+      --border:      #30363d;
+      --text:        #e6edf3;
+      --muted:       #8b949e;
+      --accent:      #3fb950;
+      --accent-dim:  #1a3327;
+      --danger:      #da3633;
+      --danger-dim:  #3a0e0e;
+      --gold:        #d29922;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo { font-size: 20px; }
+
+    header h1 {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .page-badge {
+      background: var(--accent-dim);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 9px;
+      border-radius: 20px;
+      letter-spacing: 0.3px;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s, color 0.12s;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #0a1f0f;
+      border-color: var(--accent);
+    }
+    .btn-primary:hover { background: #4bcf5e; }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border-color: var(--border);
+    }
+    .btn-secondary:hover { background: var(--surface2); border-color: var(--muted); }
+
+    .btn-copy {
+      background: transparent;
+      color: var(--accent);
+      border-color: var(--accent);
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .btn-copy:hover  { background: var(--accent-dim); }
+    .btn-copy.copied { background: var(--accent-dim); color: var(--accent); }
+
+    .btn-del {
+      background: transparent;
+      color: var(--muted);
+      border-color: transparent;
+      padding: 4px 8px;
+      font-size: 16px;
+      line-height: 1;
+    }
+    .btn-del:hover { color: var(--danger); background: var(--danger-dim); border-radius: 5px; }
+
+    .btn-edit {
+      background: transparent;
+      color: var(--muted);
+      border-color: transparent;
+      padding: 4px 8px;
+      font-size: 14px;
+      line-height: 1;
+    }
+    .btn-edit:hover { color: var(--text); background: var(--surface2); border-radius: 5px; }
+
+    /* ── Main layout ── */
+    main {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 22px 16px 48px;
+    }
+
+    /* ── Stats ── */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 5px;
+    }
+
+    .stat-value {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.1;
+    }
+
+    .stat-value.sm { font-size: 15px; padding-top: 4px; }
+
+    /* ── Form Panel ── */
+    .form-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 18px;
+      overflow: hidden;
+    }
+
+    .form-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 18px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .form-toggle:hover { background: var(--surface2); }
+
+    .chevron {
+      color: var(--muted);
+      font-size: 12px;
+      transition: transform 0.2s;
+    }
+
+    .form-panel.open .chevron { transform: rotate(180deg); }
+
+    .form-body {
+      display: none;
+      padding: 4px 18px 18px;
+      border-top: 1px solid var(--border);
+    }
+
+    .form-panel.open .form-body { display: block; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group.span2 { grid-column: span 2; }
+    .form-group.full  { grid-column: 1 / -1; }
+
+    label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    input, select, textarea {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 13px;
+      padding: 8px 11px;
+      font-family: inherit;
+      transition: border-color 0.12s;
+      width: 100%;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(63,185,80,0.08);
+    }
+
+    input::placeholder, textarea::placeholder { color: var(--muted); opacity: 0.5; }
+    select option { background: var(--surface2); }
+
+    textarea { resize: vertical; min-height: 64px; }
+
+    .form-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+      justify-content: flex-end;
+    }
+
+    /* ── Controls ── */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .filter-pills {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      flex: 1;
+    }
+
+    .pill {
+      padding: 4px 13px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.12s;
+    }
+
+    .pill:hover { border-color: var(--accent); color: var(--text); }
+    .pill.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+    .row-count {
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      margin-left: auto;
+    }
+
+    /* ── Table ── */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .table-scroll { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+    }
+
+    thead { background: var(--surface2); }
+
+    th {
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    th:hover { color: var(--text); }
+    th.sorted { color: var(--accent); }
+    th.no-sort { cursor: default; }
+    th.no-sort:hover { color: var(--muted); }
+
+    .sort-arrow { margin-left: 3px; font-size: 10px; opacity: 0.4; }
+    th.sorted .sort-arrow { opacity: 1; }
+
+    td {
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: rgba(255,255,255,0.02); }
+
+    .product-name {
+      font-weight: 600;
+      max-width: 180px;
+    }
+
+    .url-cell {
+      max-width: 160px;
+    }
+
+    .url-cell a {
+      color: var(--accent);
+      font-size: 12px;
+      text-decoration: none;
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .url-cell a:hover { text-decoration: underline; }
+
+    .notes-cell {
+      max-width: 170px;
+      font-size: 12px;
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .comm {
+      font-weight: 700;
+      color: var(--gold);
+      white-space: nowrap;
+    }
+
+    .copy-ct {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .copy-ct.hot { color: var(--accent); }
+
+    .actions { display: flex; gap: 4px; align-items: center; white-space: nowrap; }
+
+    .date-cell {
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    /* ── Program badges ── */
+    .badge {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .b-amazon   { background: rgba(255,153,0,0.14); color: #ffaa22; }
+    .b-basspro  { background: rgba(46,180,90,0.13); color: #3dbd6a; }
+    .b-onx      { background: rgba(230,126,34,0.14); color: #e8882a; }
+    .b-midway   { background: rgba(218,54,51,0.14); color: #e05050; }
+    .b-other    { background: rgba(139,148,158,0.14); color: #8b949e; }
+
+    /* ── Empty state ── */
+    .empty {
+      text-align: center;
+      padding: 56px 24px;
+      color: var(--muted);
+    }
+
+    .empty .e-icon { font-size: 38px; margin-bottom: 10px; }
+    .empty strong { display: block; font-size: 15px; color: var(--text); margin-bottom: 5px; }
+    .empty p { font-size: 13px; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 22px;
+      right: 22px;
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    #toast.show { opacity: 1; transform: translateY(0); }
+
+    /* ── Responsive ── */
+    @media (max-width: 720px) {
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .form-group.span2 { grid-column: span 1; }
+      header h1 { font-size: 14px; }
+      .page-badge { display: none; }
+    }
+
+    @media (max-width: 420px) {
+      .stats { grid-template-columns: 1fr 1fr; }
+      .stat-value { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <span class="logo">🎯</span>
+    <h1>Affiliate Link Manager</h1>
+    <span class="page-badge">Backcountry Brotherhood</span>
+  </div>
+  <button class="btn btn-secondary" onclick="exportCSV()">&#8659; Export CSV</button>
+</header>
+
+<main>
+
+  <!-- Stats -->
+  <div class="stats" id="stats"></div>
+
+  <!-- Add / Edit Form -->
+  <div class="form-panel open" id="formPanel">
+    <div class="form-toggle" onclick="toggleForm()">
+      <span id="formTitle">&#43; Add New Affiliate Link</span>
+      <span class="chevron">&#9660;</span>
+    </div>
+    <div class="form-body">
+      <form id="linkForm" onsubmit="handleSubmit(event)" autocomplete="off">
+        <input type="hidden" id="editId">
+        <div class="form-grid">
+          <div class="form-group span2">
+            <label for="fName">Product Name *</label>
+            <input id="fName" type="text" placeholder="e.g. Vortex Crossfire II 4-12x44 Scope" required>
+          </div>
+          <div class="form-group">
+            <label for="fProgram">Program *</label>
+            <select id="fProgram" required>
+              <option value="">Select program…</option>
+              <option>Amazon</option>
+              <option>Bass Pro</option>
+              <option>OnX</option>
+              <option>MidwayUSA</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="fComm">Commission %</label>
+            <input id="fComm" type="number" placeholder="e.g. 4.5" min="0" max="100" step="0.1">
+          </div>
+          <div class="form-group full">
+            <label for="fUrl">Affiliate URL *</label>
+            <input id="fUrl" type="url" placeholder="https://…" required>
+          </div>
+          <div class="form-group full">
+            <label for="fNotes">Notes</label>
+            <textarea id="fNotes" placeholder="e.g. Best for long-range elk posts — use on Day 8 gear review"></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="cancelEdit()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="submitBtn">Save Link</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Filter + count -->
+  <div class="controls">
+    <div class="filter-pills" id="pills"></div>
+    <span class="row-count" id="rowCount"></span>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th onclick="setSort('productName')">Product <span class="sort-arrow" id="sa-productName"></span></th>
+            <th onclick="setSort('program')">Program <span class="sort-arrow" id="sa-program"></span></th>
+            <th class="no-sort">URL</th>
+            <th onclick="setSort('commission')">Comm % <span class="sort-arrow" id="sa-commission"></span></th>
+            <th onclick="setSort('copyCount')">Copies <span class="sort-arrow" id="sa-copyCount"></span></th>
+            <th class="no-sort">Notes</th>
+            <th onclick="setSort('dateAdded')">Added <span class="sort-arrow" id="sa-dateAdded"></span></th>
+            <th class="no-sort"></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<div id="toast"></div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+  const KEY = 'bb_affiliate_links_v1';
+  let links   = [];
+  let filter  = 'All';
+  let sortCol = 'dateAdded';
+  let sortDir = 'desc';
+  let editing = null; // id of link being edited, or null
+
+  const SORT_COLS = ['productName', 'program', 'commission', 'copyCount', 'dateAdded'];
+
+  // ── Persistence ────────────────────────────────────────────────────────────
+  function load() {
+    try { links = JSON.parse(localStorage.getItem(KEY)) || []; } catch { links = []; }
+  }
+
+  function save() {
+    localStorage.setItem(KEY, JSON.stringify(links));
+  }
+
+  // ── Utilities ──────────────────────────────────────────────────────────────
+  function uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  function esc(s) {
+    return String(s ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function safeHref(url) {
+    const u = String(url ?? '').trim();
+    return /^https?:\/\//i.test(u) ? u : '#';
+  }
+
+  function fmtDate(iso) {
+    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+  }
+
+  function badgeClass(program) {
+    return { Amazon: 'b-amazon', 'Bass Pro': 'b-basspro', OnX: 'b-onx', MidwayUSA: 'b-midway' }[program] || 'b-other';
+  }
+
+  function shortUrl(url) {
+    return url.replace(/^https?:\/\//, '').replace(/\?.*/, '').replace(/#.*/, '');
+  }
+
+  // ── Clipboard ──────────────────────────────────────────────────────────────
+  function clipCopy(text) {
+    if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
+    return new Promise((res, rej) => {
+      const ta = Object.assign(document.createElement('textarea'), {
+        value: text, style: 'position:fixed;opacity:0;top:0;left:0'
+      });
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy') ? res() : rej(); } catch (e) { rej(e); }
+      document.body.removeChild(ta);
+    });
+  }
+
+  // ── Form ──────────────────────────────────────────────────────────────────
+  function toggleForm() {
+    document.getElementById('formPanel').classList.toggle('open');
+  }
+
+  function openForm() {
+    document.getElementById('formPanel').classList.add('open');
+    document.getElementById('fName').focus();
+  }
+
+  function clearForm() {
+    document.getElementById('linkForm').reset();
+    document.getElementById('editId').value = '';
+    document.getElementById('formTitle').textContent = '+ Add New Affiliate Link';
+    document.getElementById('submitBtn').textContent = 'Save Link';
+    editing = null;
+  }
+
+  function cancelEdit() {
+    clearForm();
+    document.getElementById('formPanel').classList.remove('open');
+  }
+
+  function startEdit(id) {
+    const link = links.find(l => l.id === id);
+    if (!link) return;
+    editing = id;
+    document.getElementById('editId').value = id;
+    document.getElementById('fName').value    = link.productName;
+    document.getElementById('fProgram').value = link.program;
+    document.getElementById('fComm').value    = link.commission || '';
+    document.getElementById('fUrl').value     = link.affiliateUrl;
+    document.getElementById('fNotes').value   = link.notes;
+    document.getElementById('formTitle').textContent  = '✏ Edit Link';
+    document.getElementById('submitBtn').textContent  = 'Update Link';
+    openForm();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    const id = document.getElementById('editId').value;
+    const data = {
+      productName:  document.getElementById('fName').value.trim(),
+      affiliateUrl: document.getElementById('fUrl').value.trim(),
+      program:      document.getElementById('fProgram').value,
+      commission:   parseFloat(document.getElementById('fComm').value) || 0,
+      notes:        document.getElementById('fNotes').value.trim(),
+    };
+
+    if (id) {
+      // Update existing
+      const idx = links.findIndex(l => l.id === id);
+      if (idx !== -1) {
+        links[idx] = { ...links[idx], ...data };
+        toast(`✓ "${data.productName}" updated`);
+      }
+    } else {
+      // New link
+      links.unshift({ id: uid(), copyCount: 0, dateAdded: new Date().toISOString(), ...data });
+      toast(`✓ "${data.productName}" saved`);
+    }
+
+    save();
+    clearForm();
+    document.getElementById('formPanel').classList.remove('open');
+    render();
+  }
+
+  // ── Delete ─────────────────────────────────────────────────────────────────
+  function deleteLink(id) {
+    const link = links.find(l => l.id === id);
+    if (!link || !confirm(`Delete "${link.productName}"?\n\nThis cannot be undone.`)) return;
+    links = links.filter(l => l.id !== id);
+    save();
+    render();
+    toast(`Deleted "${link.productName}"`);
+  }
+
+  // ── Copy ──────────────────────────────────────────────────────────────────
+  function copyLink(id) {
+    const link = links.find(l => l.id === id);
+    if (!link) return;
+    clipCopy(link.affiliateUrl).then(() => {
+      link.copyCount++;
+      save();
+      render();
+      toast(`✓ Copied — ${link.productName}`);
+      // Flash button (found after re-render)
+      const btn = document.querySelector(`[data-copy="${id}"]`);
+      if (btn) {
+        btn.textContent = '✓ Copied';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Copy Link'; btn.classList.remove('copied'); }, 2000);
+      }
+    }).catch(() => toast('⚠ Could not access clipboard'));
+  }
+
+  // ── Filter ────────────────────────────────────────────────────────────────
+  function setFilter(p) {
+    filter = p;
+    render();
+  }
+
+  // ── Sort ──────────────────────────────────────────────────────────────────
+  function setSort(col) {
+    sortDir = sortCol === col ? (sortDir === 'asc' ? 'desc' : 'asc') : 'asc';
+    sortCol = col;
+    render();
+  }
+
+  function visibleLinks() {
+    const rows = filter === 'All' ? [...links] : links.filter(l => l.program === filter);
+    rows.sort((a, b) => {
+      let av = a[sortCol] ?? '', bv = b[sortCol] ?? '';
+      if (typeof av === 'string') av = av.toLowerCase();
+      if (typeof bv === 'string') bv = bv.toLowerCase();
+      if (av < bv) return sortDir === 'asc' ? -1 : 1;
+      if (av > bv) return sortDir === 'asc' ?  1 : -1;
+      return 0;
+    });
+    return rows;
+  }
+
+  // ── Toast ─────────────────────────────────────────────────────────────────
+  let toastTimer;
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+  }
+
+  // ── Export CSV ────────────────────────────────────────────────────────────
+  function exportCSV() {
+    if (!links.length) { toast('No links to export'); return; }
+    const q = s => `"${String(s ?? '').replace(/"/g, '""')}"`;
+    const header = ['Product Name','Program','Affiliate URL','Commission %','Copy Count','Notes','Date Added'];
+    const rows   = links.map(l => [
+      l.productName, l.program, l.affiliateUrl,
+      l.commission, l.copyCount, l.notes,
+      new Date(l.dateAdded).toLocaleDateString('en-US')
+    ]);
+    const csv = [header, ...rows].map(r => r.map(q).join(',')).join('\r\n');
+    const a = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })),
+      download: `bb-affiliates-${new Date().toISOString().slice(0,10)}.csv`
+    });
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast(`✓ Exported ${links.length} links`);
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
+  function renderStats() {
+    const total  = links.length;
+    const copies = links.reduce((s, l) => s + l.copyCount, 0);
+    const progs  = new Set(links.map(l => l.program).filter(Boolean)).size;
+    const top    = [...links].sort((a,b) => b.copyCount - a.copyCount)[0];
+    const topName = top
+      ? (top.productName.length > 22 ? top.productName.slice(0,20) + '…' : top.productName)
+      : '—';
+
+    document.getElementById('stats').innerHTML = `
+      <div class="stat-card">
+        <div class="stat-label">Total Links</div>
+        <div class="stat-value">${total}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Copies</div>
+        <div class="stat-value">${copies}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Programs</div>
+        <div class="stat-value">${progs}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Most Copied</div>
+        <div class="stat-value sm">${esc(topName)}${top && top.copyCount > 0 ? `<span style="color:var(--muted);font-size:12px;font-weight:400;display:block">${top.copyCount} cop${top.copyCount === 1 ? 'y' : 'ies'}</span>` : ''}</div>
+      </div>
+    `;
+  }
+
+  function renderSortIcons() {
+    SORT_COLS.forEach(col => {
+      const el = document.getElementById(`sa-${col}`);
+      const th = el?.closest('th');
+      if (!el || !th) return;
+      if (col === sortCol) {
+        el.textContent = sortDir === 'asc' ? '↑' : '↓';
+        th.classList.add('sorted');
+      } else {
+        el.textContent = '↕';
+        th.classList.remove('sorted');
+      }
+    });
+  }
+
+  function renderPills() {
+    const programs = ['All', ...[...new Set(links.map(l => l.program).filter(Boolean))].sort()];
+    document.getElementById('pills').innerHTML = programs.map(p =>
+      `<button class="pill${filter === p ? ' active' : ''}" onclick="setFilter('${esc(p)}')">${esc(p)}</button>`
+    ).join('');
+  }
+
+  function renderTable() {
+    const rows = visibleLinks();
+    const countLabel = `${rows.length} link${rows.length !== 1 ? 's' : ''}${filter !== 'All' ? ` · ${filter}` : ''}`;
+    document.getElementById('rowCount').textContent = countLabel;
+
+    if (!rows.length) {
+      document.getElementById('tbody').innerHTML = `
+        <tr><td colspan="8">
+          <div class="empty">
+            <div class="e-icon">🎯</div>
+            <strong>${links.length === 0 ? 'No affiliate links yet' : 'No links match this filter'}</strong>
+            <p>${links.length === 0 ? 'Add your first link using the form above.' : 'Try a different program filter.'}</p>
+          </div>
+        </td></tr>`;
+      return;
+    }
+
+    document.getElementById('tbody').innerHTML = rows.map(link => {
+      const comm = link.commission > 0 ? `${link.commission}%` : '<span style="color:var(--border)">—</span>';
+      const url  = shortUrl(link.affiliateUrl);
+      return `
+        <tr>
+          <td class="product-name">${esc(link.productName)}</td>
+          <td><span class="badge ${badgeClass(link.program)}">${esc(link.program)}</span></td>
+          <td class="url-cell">
+            <a href="${safeHref(link.affiliateUrl)}" target="_blank" rel="noopener noreferrer" title="${esc(link.affiliateUrl)}">${esc(url)}</a>
+          </td>
+          <td class="comm">${comm}</td>
+          <td class="copy-ct ${link.copyCount > 0 ? 'hot' : ''}">${link.copyCount > 0 ? '&#128203;&nbsp;' : ''}${link.copyCount}</td>
+          <td class="notes-cell" title="${esc(link.notes)}">${link.notes ? esc(link.notes) : '<span style="color:var(--border)">—</span>'}</td>
+          <td class="date-cell">${fmtDate(link.dateAdded)}</td>
+          <td>
+            <div class="actions">
+              <button class="btn btn-copy" data-copy="${link.id}" onclick="copyLink('${link.id}')">Copy Link</button>
+              <button class="btn btn-edit" onclick="startEdit('${link.id}')" title="Edit">&#9998;</button>
+              <button class="btn btn-del" onclick="deleteLink('${link.id}')" title="Delete">&#215;</button>
+            </div>
+          </td>
+        </tr>`;
+    }).join('');
+  }
+
+  function render() {
+    renderStats();
+    renderSortIcons();
+    renderPills();
+    renderTable();
+  }
+
+  // ── Boot ──────────────────────────────────────────────────────────────────
+  load();
+  render();
+</script>
+</body>
+</html>
