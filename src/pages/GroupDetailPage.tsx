@@ -33,7 +33,7 @@ import Modal from '../components/ui/Modal';
 
 type Tab = 'chat' | 'goals' | 'events' | 'members';
 
-const TABS: { id: Tab; label: string; Icon: React.FC<{ size?: number; className?: string }> }[] = [
+const TABS: { id: Tab; label: string; Icon: LucideIcon }[] = [
   { id: 'chat', label: 'Chat', Icon: MessageCircle },
   { id: 'goals', label: 'Goals', Icon: Target },
   { id: 'events', label: 'Events', Icon: Calendar },
