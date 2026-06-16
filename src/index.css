@@ -1,0 +1,168 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-orange-50 text-gray-900 antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+    /* Prevent overscroll bounce on iOS */
+    overscroll-behavior: none;
+  }
+
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Hide scrollbars but keep scroll functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-brand-500 text-white font-semibold py-3 px-6 rounded-2xl
+           active:scale-95 transition-all duration-150
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100
+           hover:bg-brand-600 shadow-sm;
+  }
+
+  .btn-secondary {
+    @apply bg-white text-brand-600 font-semibold py-3 px-6 rounded-2xl border-2 border-brand-200
+           active:scale-95 transition-all duration-150
+           disabled:opacity-50 disabled:cursor-not-allowed
+           hover:bg-brand-50;
+  }
+
+  .btn-ghost {
+    @apply text-gray-600 font-medium py-2 px-4 rounded-xl
+           active:scale-95 transition-all duration-150
+           hover:bg-gray-100;
+  }
+
+  .btn-danger {
+    @apply bg-red-500 text-white font-semibold py-3 px-6 rounded-2xl
+           active:scale-95 transition-all duration-150
+           hover:bg-red-600;
+  }
+
+  .card {
+    @apply bg-white rounded-3xl shadow-sm border border-orange-100;
+  }
+
+  .input-field {
+    @apply w-full bg-orange-50 border-2 border-orange-100 rounded-2xl px-4 py-3
+           text-gray-900 placeholder-gray-400
+           focus:outline-none focus:border-brand-400 focus:bg-white
+           transition-all duration-150;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold;
+  }
+
+  .skeleton {
+    @apply bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100
+           animate-shimmer bg-[length:2000px_100%];
+  }
+
+  .page-container {
+    @apply max-w-md mx-auto min-h-screen flex flex-col;
+  }
+
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Swipe card */
+  .swipe-card {
+    @apply card overflow-hidden select-none cursor-grab active:cursor-grabbing;
+    touch-action: none;
+  }
+
+  /* Match percentage ring */
+  .match-ring {
+    @apply rounded-full flex items-center justify-center font-bold;
+  }
+
+  /* Bottom navigation */
+  .bottom-nav {
+    @apply fixed bottom-0 left-0 right-0 bg-white border-t border-orange-100
+           flex items-center justify-around px-2 z-50;
+    padding-bottom: env(safe-area-inset-bottom);
+    height: calc(64px + env(safe-area-inset-bottom));
+  }
+
+  .nav-item {
+    @apply flex flex-col items-center gap-0.5 px-3 py-2 rounded-2xl
+           transition-all duration-150 min-w-0;
+  }
+
+  .nav-item.active {
+    @apply text-brand-500;
+  }
+
+  .nav-item:not(.active) {
+    @apply text-gray-400;
+  }
+
+  /* Message bubble */
+  .message-bubble {
+    @apply max-w-[75%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed;
+  }
+
+  .message-bubble.sent {
+    @apply bg-brand-500 text-white rounded-br-sm;
+  }
+
+  .message-bubble.received {
+    @apply bg-gray-100 text-gray-900 rounded-bl-sm;
+  }
+
+  /* Goal pill */
+  .goal-pill {
+    @apply flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium;
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text text-transparent;
+  }
+
+  /* Glass effect */
+  .glass {
+    @apply bg-white/80 backdrop-blur-sm;
+  }
+}
+
+/* Swipe gesture cursor */
+@media (hover: hover) {
+  .swipe-card:hover {
+    transform: scale(1.01);
+  }
+}
+
+/* iOS-style momentum scrolling */
+.momentum-scroll {
+  -webkit-overflow-scrolling: touch;
+  overflow-y: scroll;
+}
+
+/* Pull to refresh indicator */
+.ptr-indicator {
+  @apply flex items-center justify-center h-16 text-brand-500;
+}
