@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { cn, formatDate, TIER_LIMITS } from '@/lib/utils'
+import { isDemoMode, DEMO_MESSAGES, DEMO_CONVERSATIONS } from '@/lib/demoData'
 import Avatar from '@/components/shared/Avatar'
 import { VerifiedBadge } from '@/components/shared/Badge'
 import { ListItemSkeleton } from '@/components/shared/LoadingSkeleton'
@@ -248,6 +249,16 @@ export default function ConversationPage() {
   // ── Fetch initial data ───────────────────────────────────────────────────────
 
   const fetchData = useCallback(async () => {
+    if (isDemoMode() && conversationId) {
+      const demoConv = DEMO_CONVERSATIONS.find(c => c.id === conversationId)
+      if (demoConv) {
+        setOtherProfile(demoConv.other_profile)
+        setMessages(DEMO_MESSAGES[conversationId] ?? [])
+      }
+      setLoading(false)
+      return
+    }
+
     if (!user || !conversationId) return
 
     try {
@@ -391,7 +402,8 @@ export default function ConversationPage() {
 
   async function handleSend() {
     const content = inputText.trim()
-    if (!content || !user || !conversationId || sending) return
+    const senderId = user?.id ?? profile?.id
+    if (!content || !senderId || !conversationId || sending) return
 
     if (!canSend) {
       toast.error('Daily message limit reached. Upgrade to Premium!')
@@ -405,7 +417,7 @@ export default function ConversationPage() {
     const optimisticMsg: Message = {
       id: optimisticId,
       conversation_id: conversationId,
-      sender_id: user.id,
+      sender_id: senderId,
       content,
       read_at: null,
       created_at: new Date().toISOString(),
@@ -415,12 +427,17 @@ export default function ConversationPage() {
     setInputText('')
     scrollToBottom()
 
+    if (isDemoMode()) {
+      setSending(false)
+      return
+    }
+
     try {
       const { data: inserted, error } = await supabase
         .from('messages')
         .insert({
           conversation_id: conversationId,
-          sender_id: user.id,
+          sender_id: senderId,
           content,
         })
         .select()

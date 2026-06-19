@@ -4,6 +4,7 @@ import { MessageCircle, Sparkles, CheckCircle } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { cn, formatTimeAgo, getInitials } from '@/lib/utils'
+import { isDemoMode, DEMO_MATCHES, DEMO_CONVERSATIONS } from '@/lib/demoData'
 import MatchPercentBadge from '@/components/matching/MatchPercentBadge'
 import type { Match, Profile, BucketGoal } from '@/types'
 
@@ -217,6 +218,30 @@ export default function MatchesPage() {
   const fetchMatches = useCallback(async () => {
     if (!profile) return
     setLoading(true)
+
+    if (isDemoMode()) {
+      const conv = DEMO_CONVERSATIONS
+      const built: MatchWithProfile[] = DEMO_MATCHES.map(m => {
+        const convRow = conv.find(c => c.participant_ids.includes(m.user_b_id))
+        return {
+          match: m as unknown as Match,
+          profile: m.profile,
+          sharedGoals: m.shared_goal_titles.map((t, i) => ({
+            id: `sg-${i}`, user_id: m.user_b_id, title: t, description: null,
+            category: 'Travel' as const, status: 'active' as const, is_public: true,
+            completed_at: null, proof_photo_url: null,
+            created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+          } as BucketGoal)),
+          lastMessage: convRow?.last_message ?? null,
+          lastMessageAt: convRow?.last_message_at ?? null,
+          conversationId: convRow?.id ?? null,
+          isNew: !convRow?.last_message,
+        }
+      })
+      setMatches(built)
+      setLoading(false)
+      return
+    }
 
     try {
       // Fetch all matched rows involving this user

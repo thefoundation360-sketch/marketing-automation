@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { cn, formatTimeAgo } from '@/lib/utils'
+import { isDemoMode, DEMO_CONVERSATIONS } from '@/lib/demoData'
 import Avatar from '@/components/shared/Avatar'
 import { VerifiedBadge } from '@/components/shared/Badge'
 import { ListItemSkeleton } from '@/components/shared/LoadingSkeleton'
@@ -166,6 +167,19 @@ export default function MessagesPage() {
   // ── Data fetching ────────────────────────────────────────────────────────────
 
   const fetchConversations = useCallback(async () => {
+    if (isDemoMode()) {
+      const built: ConversationWithProfile[] = DEMO_CONVERSATIONS.map(c => ({
+        conversation: c as unknown as Conversation,
+        otherProfile: c.other_profile,
+        unreadCount: c.unread,
+        isOnline: c.other_profile.id === 'demo-2',
+        isMatch: true,
+      }))
+      setConversations(built)
+      setLoading(false)
+      return
+    }
+
     if (!user || !profile) return
 
     try {

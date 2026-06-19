@@ -12,6 +12,7 @@ import toast from 'react-hot-toast'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { cn, formatTimeAgo, GOAL_CATEGORY_ICONS, GOAL_CATEGORY_COLORS } from '@/lib/utils'
+import { isDemoMode, DEMO_FEED } from '@/lib/demoData'
 import Avatar from '@/components/shared/Avatar'
 import EmptyState from '@/components/shared/EmptyState'
 import { CardSkeleton } from '@/components/shared/LoadingSkeleton'
@@ -432,6 +433,13 @@ export default function FeedPage() {
   const fetchFeed = useCallback(
     async (silent = false) => {
       if (!profile) return
+
+      if (isDemoMode()) {
+        setFeedItems(DEMO_FEED)
+        setLoading(false)
+        return
+      }
+
       if (!silent) setLoading(true)
 
       try {

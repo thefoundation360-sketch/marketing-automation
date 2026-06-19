@@ -13,6 +13,7 @@ import {
   TIER_LIMITS,
   canAddGoal,
 } from '@/lib/utils'
+import { isDemoMode, DEMO_GOALS } from '@/lib/demoData'
 import EmptyState from '@/components/shared/EmptyState'
 import { CardSkeleton } from '@/components/shared/LoadingSkeleton'
 import Modal from '@/components/shared/Modal'
@@ -316,6 +317,17 @@ export default function BucketListPage() {
   // ── Load Goals ──────────────────────────────────────────────────────────────
 
   const loadGoals = useCallback(async () => {
+    if (isDemoMode()) {
+      const stored = localStorage.getItem('demo_goals')
+      if (stored) {
+        setGoals(JSON.parse(stored))
+      } else {
+        setGoals(DEMO_GOALS)
+        localStorage.setItem('demo_goals', JSON.stringify(DEMO_GOALS))
+      }
+      setLoading(false)
+      return
+    }
     if (!user) return
     setLoading(true)
     try {
@@ -342,6 +354,33 @@ export default function BucketListPage() {
   // ── Save Goal (Add or Edit) ─────────────────────────────────────────────────
 
   async function handleSaveGoal(partial: Partial<BucketGoal>) {
+    if (isDemoMode()) {
+      const stored = localStorage.getItem('demo_goals')
+      const current: BucketGoal[] = stored ? JSON.parse(stored) : DEMO_GOALS
+      let updated: BucketGoal[]
+      if (editingGoal) {
+        updated = current.map(g =>
+          g.id === editingGoal.id
+            ? { ...g, ...partial, updated_at: new Date().toISOString() }
+            : g
+        )
+      } else {
+        const newGoal: BucketGoal = {
+          id: `goal-${Date.now()}`, user_id: 'demo-user-1',
+          title: partial.title ?? 'New Dream',
+          description: partial.description ?? null,
+          category: partial.category ?? 'Travel',
+          status: 'active', is_public: partial.is_public ?? true,
+          completed_at: null, proof_photo_url: null,
+          created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+        }
+        updated = [newGoal, ...current]
+      }
+      localStorage.setItem('demo_goals', JSON.stringify(updated))
+      setGoals(updated)
+      return
+    }
+
     if (!user) throw new Error('Not authenticated')
 
     if (editingGoal) {
@@ -384,9 +423,21 @@ export default function BucketListPage() {
   // ── Delete Goal ─────────────────────────────────────────────────────────────
 
   async function confirmDelete() {
-    if (!deleteGoal || !user) return
+    if (!deleteGoal) return
     setDeleting(true)
     try {
+      if (isDemoMode()) {
+        const stored = localStorage.getItem('demo_goals')
+        const current: BucketGoal[] = stored ? JSON.parse(stored) : DEMO_GOALS
+        const updated = current.filter(g => g.id !== deleteGoal.id)
+        localStorage.setItem('demo_goals', JSON.stringify(updated))
+        setGoals(updated)
+        toast.success('Dream removed.')
+        setDeleteGoal(null)
+        return
+      }
+
+      if (!user) return
       const { error } = await supabase
         .from('bucket_goals')
         .delete()
@@ -411,8 +462,21 @@ export default function BucketListPage() {
     goalId: string,
     completedAt: string,
     proofPhotoUrl: string | null,
-    shareToFeed: boolean
+    _shareToFeed: boolean
   ) {
+    if (isDemoMode()) {
+      const stored = localStorage.getItem('demo_goals')
+      const current: BucketGoal[] = stored ? JSON.parse(stored) : DEMO_GOALS
+      const updated = current.map(g =>
+        g.id === goalId
+          ? { ...g, status: 'completed' as const, completed_at: new Date(completedAt).toISOString(), proof_photo_url: proofPhotoUrl, updated_at: new Date().toISOString() }
+          : g
+      )
+      localStorage.setItem('demo_goals', JSON.stringify(updated))
+      setGoals(updated)
+      return
+    }
+
     if (!user) throw new Error('Not authenticated')
 
     const { error } = await supabase
@@ -428,8 +492,7 @@ export default function BucketListPage() {
 
     if (error) throw error
 
-    // Optionally create a feed item
-    if (shareToFeed) {
+    if (_shareToFeed) {
       await supabase.from('feed_items').insert({
         user_id: user.id,
         type: 'goal_completed',
