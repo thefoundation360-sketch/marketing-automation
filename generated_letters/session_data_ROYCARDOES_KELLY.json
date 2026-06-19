@@ -1,0 +1,59 @@
+{
+  "profile": {
+    "name": "Roycardoes Kelly",
+    "address": "1510 Fatherland St",
+    "city": "Nashville",
+    "state": "TN",
+    "zip": "37206",
+    "phone": "615-738-1214",
+    "email": "thefoundation360@gmail.com",
+    "dob": "12/12/1986",
+    "fico": "563"
+  },
+  "items": [
+    {
+      "creditor": "[CREDITOR NAME \u2014 fill in from report]",
+      "acct": "XXXX",
+      "balance": "0.00",
+      "basis": "Inaccurate Balance",
+      "relief": "Delete"
+    },
+    {
+      "creditor": "[COLLECTION AGENCY \u2014 fill in]",
+      "acct": "XXXX",
+      "balance": "0.00",
+      "basis": "Re-aged Collection",
+      "relief": "Delete"
+    },
+    {
+      "creditor": "[LATE PAYMENT ACCOUNT \u2014 fill in]",
+      "acct": "XXXX",
+      "balance": "0.00",
+      "basis": "Incorrect Account Status",
+      "relief": "Remove Late Payments"
+    },
+    {
+      "creditor": "[CHARGE-OFF \u2014 fill in]",
+      "acct": "XXXX",
+      "balance": "0.00",
+      "basis": "Paid / Settled \u2014 still showing balance",
+      "relief": "Delete"
+    },
+    {
+      "creditor": "[HARD INQUIRY \u2014 fill in company name]",
+      "acct": "N/A",
+      "balance": "0.00",
+      "basis": "Unauthorized Hard Inquiry",
+      "relief": "Remove Inquiry"
+    }
+  ],
+  "collectors": [
+    {
+      "name": "[COLLECTION AGENCY NAME \u2014 fill in]",
+      "address": "[Agency Address \u2014 fill in]",
+      "acct": "XXXX",
+      "amount": "0.00",
+      "original_creditor": "[Original Creditor \u2014 fill in]"
+    }
+  ]
+}
