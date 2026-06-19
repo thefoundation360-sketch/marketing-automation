@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { Session, User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { Profile } from '@/types'
+import { isDemoMode, DEMO_USER } from '@/lib/demoData'
 
 interface AuthContextType {
   session: Session | null
@@ -28,7 +29,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [isGuest, setIsGuest] = useState(false)
 
+  // Demo mode: activate automatically when Supabase isn't configured
+  const demoMode = isDemoMode()
+
   useEffect(() => {
+    if (demoMode) {
+      const stored = localStorage.getItem('demo_profile')
+      if (stored) {
+        setProfile(JSON.parse(stored))
+      } else {
+        setProfile(DEMO_USER)
+        localStorage.setItem('demo_profile', JSON.stringify(DEMO_USER))
+      }
+      setLoading(false)
+      return
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setUser(session?.user ?? null)
@@ -69,6 +85,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signUp(email: string, password: string, fullName: string) {
+    if (demoMode) {
+      const p = { ...DEMO_USER, full_name: fullName, username: fullName.toLowerCase().replace(/\s/g, '_') + Math.floor(Math.random() * 999), onboarding_complete: false }
+      setProfile(p)
+      localStorage.setItem('demo_profile', JSON.stringify(p))
+      return
+    }
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -81,11 +103,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signIn(email: string, password: string) {
+    if (demoMode) {
+      setProfile(DEMO_USER)
+      localStorage.setItem('demo_profile', JSON.stringify(DEMO_USER))
+      return
+    }
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
   }
 
   async function signInWithGoogle() {
+    if (demoMode) {
+      setProfile(DEMO_USER)
+      localStorage.setItem('demo_profile', JSON.stringify(DEMO_USER))
+      return
+    }
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -123,9 +155,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut() {
-    if (isGuest) {
+    if (demoMode || isGuest) {
       setIsGuest(false)
       setProfile(null)
+      localStorage.removeItem('demo_profile')
       return
     }
     const { error } = await supabase.auth.signOut()
@@ -141,6 +174,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function updateProfile(updates: Partial<Profile>) {
+    if (demoMode) {
+      const updated = { ...(profile ?? DEMO_USER), ...updates, updated_at: new Date().toISOString() }
+      setProfile(updated)
+      localStorage.setItem('demo_profile', JSON.stringify(updated))
+      return
+    }
     if (!user) throw new Error('Not authenticated')
     const { data, error } = await supabase
       .from('profiles')
@@ -153,6 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function refreshProfile() {
+    if (demoMode) return
     if (user) await fetchProfile(user.id)
   }
 
