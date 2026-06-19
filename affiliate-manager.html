@@ -467,8 +467,23 @@
     <h1>Affiliate Link Manager</h1>
     <span class="page-badge">Backcountry Brotherhood</span>
   </div>
-  <button class="btn btn-secondary" onclick="exportCSV()">&#8659; Export CSV</button>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn btn-secondary" id="starterBtn" onclick="loadStarterKit()" style="display:none">⚡ Load 15 Starter Products</button>
+    <a href="content-calendar.html" class="btn btn-secondary">📅 Content Calendar</a>
+    <button class="btn btn-secondary" onclick="exportCSV()">&#8659; Export CSV</button>
+  </div>
 </header>
+
+<!-- Quick-start banner (shown only when library is empty) -->
+<div id="quickstartBanner" style="display:none;background:#1a2f1a;border-bottom:1px solid #2d6a4f;padding:12px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+  <span style="font-size:20px">⚡</span>
+  <div style="flex:1">
+    <strong style="color:#3fb950;font-size:13px">Quick Start — Load your 15 starter products</strong>
+    <p style="font-size:12px;color:#8b949e;margin-top:2px">Pre-loaded with every product referenced in your 30-day content plan. Replace the URLs with your affiliate-tagged links.</p>
+  </div>
+  <button class="btn btn-primary" onclick="loadStarterKit()">Load 15 Products</button>
+  <button onclick="document.getElementById('quickstartBanner').style.display='none'" style="background:transparent;border:none;color:#8b949e;cursor:pointer;font-size:18px;line-height:1">&#215;</button>
+</div>
 
 <main>
 
@@ -553,6 +568,48 @@
 <div id="toast"></div>
 
 <script>
+  // ── Starter kit — 15 products mapped to the 30-day content plan ─────────────
+  // URLs are real product search pages. Replace each with your affiliate-tagged link.
+  const STARTER_PRODUCTS = [
+    { productName:"Black Diamond Spot 400 Headlamp",          affiliateUrl:"https://www.amazon.com/s?k=black+diamond+spot+400+headlamp",           program:"Amazon",    commission:4,   notes:"Day 5 affiliate roundup — cold-weather gear essentials (AFFILIATE SLOT). Replace URL with your Amazon Associates link." },
+    { productName:"HeatMax Disposable Hand Warmers (40-pack)", affiliateUrl:"https://www.amazon.com/s?k=heatmax+hand+warmers+40+pack",               program:"Amazon",    commission:4,   notes:"Day 5 affiliate roundup — pairs with headlamp and base layer. Replace URL with your Amazon Associates link." },
+    { productName:"Minus33 Merino Wool Midweight Base Layer",  affiliateUrl:"https://www.amazon.com/s?k=minus33+merino+wool+midweight+base+layer",   program:"Amazon",    commission:4,   notes:"Day 5 affiliate roundup — highest-value item in the cold-weather kit post. Replace URL with your Amazon Associates link." },
+    { productName:"Irish Setter Men's Elk Tracker Hunting Boot", affiliateUrl:"https://www.amazon.com/s?k=irish+setter+elk+tracker+hunting+boot",   program:"Amazon",    commission:4,   notes:"Day 2 gear review — hunting boots. Also works for any backcountry post. Replace URL with your Amazon Associates link." },
+    { productName:"Vortex Crossfire II 4-12x44 Riflescope",   affiliateUrl:"https://www.amazon.com/s?k=vortex+crossfire+ii+4-12x44+riflescope",    program:"Amazon",    commission:4,   notes:"Day 8 gear review (AFFILIATE SLOT) — long-range hunting scope post. Replace URL with your Amazon Associates link." },
+    { productName:"Leupold VX-Freedom 3-9x40 Riflescope",     affiliateUrl:"https://www.amazon.com/s?k=leupold+vx-freedom+3-9x40+riflescope",      program:"MidwayUSA", commission:6,   notes:"Day 8 alternate scope — use as second option in gear review comments. Replace URL with your MidwayUSA affiliate link." },
+    { productName:"Shimano Sienna FE 2500 Spinning Reel",     affiliateUrl:"https://www.amazon.com/s?k=shimano+sienna+fe+2500+spinning+reel",       program:"Amazon",    commission:4,   notes:"Day 11 affiliate roundup — fishing reel (spend money here). Replace URL with your Amazon Associates link." },
+    { productName:"PowerPro Spectra Braided Fishing Line 10lb", affiliateUrl:"https://www.amazon.com/s?k=powerpro+spectra+braided+fishing+line",    program:"Amazon",    commission:4,   notes:"Day 11 affiliate roundup — fishing line (never cut corners). Replace URL with your Amazon Associates link." },
+    { productName:"Frabill Conservation Catch & Release Net",  affiliateUrl:"https://www.basspro.com/shop/SearchDisplay?searchTerm=frabill+conservation+net", program:"Bass Pro", commission:5, notes:"Day 11 affiliate roundup — rubber mesh net for catch and release. Replace URL with your Bass Pro affiliate link." },
+    { productName:"Benchmade Saddle Mountain Skinner Fixed Blade", affiliateUrl:"https://www.midwayusa.com/s#/listing?text=benchmade+saddle+mountain+skinner", program:"MidwayUSA", commission:6, notes:"Day 15 gear review (AFFILIATE SLOT) — hunting knife. Premium pick. Replace URL with your MidwayUSA affiliate link." },
+    { productName:"Adventure Medical Kits Sportsman 300",      affiliateUrl:"https://www.amazon.com/s?k=adventure+medical+kits+sportsman+300",       program:"Amazon",    commission:4,   notes:"Day 18 affiliate roundup — hunting camp first aid kit. Replace URL with your Amazon Associates link." },
+    { productName:"UCO Stormproof Match Kit with Case",        affiliateUrl:"https://www.amazon.com/s?k=uco+stormproof+match+kit+waterproof",         program:"Amazon",    commission:4,   notes:"Day 18 affiliate roundup — backup firestarter that works wet. Replace URL with your Amazon Associates link." },
+    { productName:"Vortex Ranger 1800 Laser Rangefinder",      affiliateUrl:"https://www.amazon.com/s?k=vortex+ranger+1800+laser+rangefinder",        program:"Amazon",    commission:4,   notes:"Day 23 gear review — elk and mule deer at real distance. Replace URL with your Amazon Associates link." },
+    { productName:"OnX Hunt — Elite Membership (Annual)",      affiliateUrl:"https://www.onxmaps.com/hunt/app",                                        program:"OnX",       commission:20,  notes:"Day 28 affiliate roundup (AFFILIATE SLOT) — highest-commission item in the plan at 20%. Replace URL with your OnX affiliate link." },
+    { productName:"St. Croix Triumph Spinning Rod 6'6\" Medium", affiliateUrl:"https://www.amazon.com/s?k=st+croix+triumph+spinning+rod+6+6+medium", program:"Amazon",    commission:4,   notes:"Day 29 gear review (AFFILIATE SLOT) — walleye/bass spinning rod featured in the rod test post. Replace URL with your Amazon Associates link." },
+  ];
+
+  function loadStarterKit() {
+    if (links.length > 0 && !confirm(`You already have ${links.length} link(s) saved. Add the 15 starter products on top of them?`)) return;
+    const now = new Date();
+    STARTER_PRODUCTS.forEach((p, i) => {
+      links.push({
+        id: uid(),
+        productName:  p.productName,
+        affiliateUrl: p.affiliateUrl,
+        program:      p.program,
+        commission:   p.commission,
+        notes:        p.notes,
+        copyCount:    0,
+        dateAdded:    new Date(now.getTime() + i).toISOString(),
+      });
+    });
+    save();
+    document.getElementById('quickstartBanner').style.display = 'none';
+    document.getElementById('starterBtn').style.display = 'none';
+    render();
+    toast(`✓ Loaded 15 starter products — replace URLs with your affiliate links`);
+  }
+
   // ── State ──────────────────────────────────────────────────────────────────
   const KEY = 'bb_affiliate_links_v1';
   let links   = [];
@@ -873,6 +930,10 @@
 
   // ── Boot ──────────────────────────────────────────────────────────────────
   load();
+  if (links.length === 0) {
+    document.getElementById('quickstartBanner').style.display = 'flex';
+    document.getElementById('starterBtn').style.display = 'inline-flex';
+  }
   render();
 </script>
 </body>

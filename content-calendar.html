@@ -553,6 +553,7 @@
     <span class="hd-badge">Backcountry Brotherhood</span>
   </div>
   <div class="hd-right">
+    <button class="hd-link" onclick="exportScheduleCSV()" style="cursor:pointer;font-family:inherit">&#8659; Schedule CSV</button>
     <a href="affiliate-manager.html" class="hd-link">🎯 Affiliate Manager</a>
   </div>
 </header>
@@ -687,9 +688,17 @@ let startDate  = '';
 let typeFilter = 'all';
 let openDay    = null;
 
+function nextMondayStr() {
+  const d = new Date();
+  const dow = d.getDay();
+  const daysUntil = dow === 1 ? 0 : (8 - dow) % 7 || 7;
+  d.setDate(d.getDate() + daysUntil);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 function loadState() {
   try { statuses = JSON.parse(localStorage.getItem(SK_STATUS)) || {}; } catch { statuses = {}; }
-  startDate  = localStorage.getItem(SK_START) || todayStr();
+  startDate  = localStorage.getItem(SK_START) || nextMondayStr();
   typeFilter = localStorage.getItem(SK_FILTER) || 'all';
 }
 
@@ -862,8 +871,22 @@ function openPanel(day) {
     <div class="time-badge">&#128336; Post at ${esc(post.time)}</div>
 
     <div class="post-section">
-      <div class="sec-label">Image Prompt <button class="copy-btn" onclick="copySection('img-${day}', this)">Copy</button></div>
+      <div class="sec-label">Image Prompt <button class="copy-btn" onclick="copySection('img-${day}', this)">Copy for AI</button></div>
       <div class="sec-text image-text" id="img-${day}">${esc(post.img)}</div>
+      <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+        <a href="https://unsplash.com/s/photos/${imgQuery(post.img)}" target="_blank" rel="noopener"
+           style="font-size:11px;color:var(--c-question_poll);text-decoration:none;border:1px solid rgba(56,139,253,0.3);padding:3px 9px;border-radius:4px;white-space:nowrap">
+          &#128247; Unsplash
+        </a>
+        <a href="https://www.pexels.com/search/${imgQuery(post.img)}/" target="_blank" rel="noopener"
+           style="font-size:11px;color:var(--c-question_poll);text-decoration:none;border:1px solid rgba(56,139,253,0.3);padding:3px 9px;border-radius:4px;white-space:nowrap">
+          &#128247; Pexels
+        </a>
+        <a href="https://www.shutterstock.com/search/${imgQuery(post.img)}" target="_blank" rel="noopener"
+           style="font-size:11px;color:var(--c-question_poll);text-decoration:none;border:1px solid rgba(56,139,253,0.3);padding:3px 9px;border-radius:4px;white-space:nowrap">
+          &#128247; Shutterstock
+        </a>
+      </div>
     </div>
 
     <div class="tip-box">
@@ -936,6 +959,51 @@ function toast(msg) {
   el.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ── Image search query from prompt text ───────────────────────────────────────
+function imgQuery(prompt) {
+  const stop = new Set(['a','an','the','and','or','of','on','in','at','to','for','with','no','not','by','as','its','this','that','from','are','is','be','have','has','just','both','shot','visible','people','faces','face','each','very','all']);
+  return prompt.toLowerCase()
+    .replace(/[^a-z\s]/g, '')
+    .split(/\s+/)
+    .filter(w => w.length > 3 && !stop.has(w))
+    .slice(0, 4)
+    .join('+');
+}
+
+// ── Schedule CSV export ───────────────────────────────────────────────────────
+function exportScheduleCSV() {
+  const q = s => `"${String(s ?? '').replace(/"/g, '""')}"`;
+  const header = ['Day','Post Date','Day of Week','Post Time (EST)','Content Type','Affiliate Slot','Hook','Body','CTA','Hashtags','Full Post (Paste-Ready)','Image Prompt','Unsplash Search','Pexels Search','Engagement Tip','Status'];
+  const DOWS_FULL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const rows = POSTS.map(post => {
+    const d = dayToDate(post.day, startDate);
+    const postDate  = d.toLocaleDateString('en-US', { month:'2-digit', day:'2-digit', year:'numeric' });
+    const dayOfWeek = DOWS_FULL[d.getDay()];
+    const full = [post.hook, post.body, post.cta, post.hashtags].join('\n\n');
+    const query = imgQuery(post.img);
+    return [
+      post.day, postDate, dayOfWeek, post.time,
+      TYPE_LABELS[post.type],
+      AFFILIATE_DAYS.has(post.day) ? 'Yes' : 'No',
+      post.hook, post.body, post.cta, post.hashtags,
+      full, post.img,
+      `https://unsplash.com/s/photos/${query}`,
+      `https://www.pexels.com/search/${query}/`,
+      post.tip,
+      dayStatus(post.day).replace('_', ' '),
+    ];
+  });
+  const csv = [header, ...rows].map(r => r.map(q).join(',')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(blob),
+    download: `bb-schedule-${startDate}.csv`,
+  });
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast(`✓ Schedule exported — ${startDate} through Day 30`);
 }
 
 // ── Escape ────────────────────────────────────────────────────────────────────

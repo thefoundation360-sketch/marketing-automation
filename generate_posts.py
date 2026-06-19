@@ -4,11 +4,11 @@ Backcountry Brotherhood — 30-Day Facebook Content Generator
 Authentic hunting and fishing content for Baby Boomer men (ages 60-75)
 
 Usage:
-    python generate_posts.py                           # CSV, all 30 posts
-    python generate_posts.py --type nostalgia          # Filter by type
-    python generate_posts.py --format json             # JSON output
-    python generate_posts.py --format both             # CSV + JSON
-    python generate_posts.py --output schedule.csv     # Custom filename
+    python generate_posts.py                                    # CSV, all 30 posts
+    python generate_posts.py --type nostalgia                   # Filter by type
+    python generate_posts.py --format both                      # CSV + JSON
+    python generate_posts.py --start-date 2026-07-07            # Include real post dates
+    python generate_posts.py --start-date 2026-07-07 --format both
 
 Content types: nostalgia, gear_review, question_poll,
                scenic_caption, affiliate_roundup, video_script
@@ -18,6 +18,7 @@ import csv
 import json
 import sys
 import argparse
+from datetime import date, timedelta
 
 VALID_TYPES = [
     "nostalgia",
@@ -597,23 +598,36 @@ SUPPLEMENTS = {
 
 
 # ── Build output rows ──────────────────────────────────────────────────────────
-def build_rows(filter_type: str | None) -> list[dict]:
+def build_rows(filter_type: str | None, start_date: str | None = None) -> list[dict]:
+    start = date.fromisoformat(start_date) if start_date else None
     rows = []
     for day_index, post in enumerate(CONTENT, start=1):
         if filter_type and post["post_type"] != filter_type:
             continue
         sup = SUPPLEMENTS.get(day_index, {})
+        post_date = ""
+        day_of_week = ""
+        if start:
+            d = start + timedelta(days=day_index - 1)
+            post_date = d.strftime("%m/%d/%Y")
+            day_of_week = d.strftime("%A")
+        full_post = "\n\n".join(filter(None, [
+            post["hook"], post["body"], post["cta"], post["hashtags"]
+        ]))
         rows.append(
             {
                 "Day": day_index,
+                "Post Date": post_date,
+                "Day of Week": day_of_week,
                 "Post Type": post["post_type"],
+                "Affiliate Slot": "Yes" if day_index in AFFILIATE_DAYS else "No",
+                "Best Time to Post": sup.get("best_time", ""),
                 "Hook": post["hook"],
                 "Body": post["body"],
                 "CTA": post["cta"],
                 "Hashtags": post["hashtags"],
-                "Affiliate Slot": "Yes" if day_index in AFFILIATE_DAYS else "No",
+                "Full Post (Paste-Ready)": full_post,
                 "Image Prompt": sup.get("image_prompt", ""),
-                "Best Time to Post": sup.get("best_time", ""),
                 "Engagement Tip": sup.get("engagement_tip", ""),
             }
         )
@@ -622,8 +636,9 @@ def build_rows(filter_type: str | None) -> list[dict]:
 
 # ── Writers ────────────────────────────────────────────────────────────────────
 CSV_FIELDS = [
-    "Day", "Post Type", "Hook", "Body", "CTA", "Hashtags",
-    "Affiliate Slot", "Image Prompt", "Best Time to Post", "Engagement Tip",
+    "Day", "Post Date", "Day of Week", "Post Type", "Affiliate Slot",
+    "Best Time to Post", "Hook", "Body", "CTA", "Hashtags",
+    "Full Post (Paste-Ready)", "Image Prompt", "Engagement Tip",
 ]
 
 
@@ -640,7 +655,7 @@ def write_json(rows: list[dict], path: str) -> None:
 
 
 # ── Summary ────────────────────────────────────────────────────────────────────
-def print_summary(rows: list[dict], filter_type: str | None, fmt: str, base: str) -> None:
+def print_summary(rows: list[dict], filter_type: str | None, fmt: str, base: str, start_date: str | None) -> None:
     type_counts: dict[str, int] = {}
     affiliate_count = 0
     for row in rows:
@@ -654,6 +669,11 @@ def print_summary(rows: list[dict], filter_type: str | None, fmt: str, base: str
     print(f"{'─' * 54}")
     print(f"  Total posts    : {len(rows)}")
     print(f"  Affiliate slots: {affiliate_count}")
+    if start_date:
+        end = date.fromisoformat(start_date) + timedelta(days=len(rows) - 1)
+        print(f"  Schedule       : {start_date} → {end.strftime('%Y-%m-%d')}")
+    else:
+        print(f"  Schedule       : (no start date — add --start-date YYYY-MM-DD for dated output)")
     files = []
     if fmt in ("csv", "both"):  files.append(f"{base}.csv")
     if fmt in ("json", "both"): files.append(f"{base}.json")
@@ -677,8 +697,9 @@ def main() -> None:
         epilog="\n".join([
             "Examples:",
             "  python generate_posts.py",
+            "  python generate_posts.py --start-date 2026-07-07",
+            "  python generate_posts.py --start-date 2026-07-07 --format both",
             "  python generate_posts.py --type nostalgia",
-            "  python generate_posts.py --format both",
             "  python generate_posts.py --format json --output schedule",
         ]),
     )
@@ -699,9 +720,14 @@ def main() -> None:
         default="backcountry_brotherhood_30_days",
         help="Base output filename without extension (default: backcountry_brotherhood_30_days)",
     )
+    parser.add_argument(
+        "--start-date",
+        metavar="YYYY-MM-DD",
+        help="First post date. Adds Post Date, Day of Week, and Full Post columns to output.",
+    )
     args = parser.parse_args()
 
-    rows = build_rows(filter_type=args.type)
+    rows = build_rows(filter_type=args.type, start_date=args.start_date)
     if not rows:
         print(f"No posts found for type: {args.type}", file=sys.stderr)
         sys.exit(1)
@@ -714,7 +740,7 @@ def main() -> None:
     if args.format in ("json", "both"):
         write_json(rows, f"{base}.json")
 
-    print_summary(rows, args.type, args.format, base)
+    print_summary(rows, args.type, args.format, base, args.start_date)
 
 
 if __name__ == "__main__":
