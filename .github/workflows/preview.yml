@@ -1,0 +1,53 @@
+name: Preview Deploy (PR)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  preview:
+    name: Deploy Preview
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Deploy Preview to Vercel
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}
+          VITE_STRIPE_PREMIUM_MONTHLY: ${{ secrets.VITE_STRIPE_PREMIUM_MONTHLY }}
+          VITE_STRIPE_PREMIUM_ANNUAL: ${{ secrets.VITE_STRIPE_PREMIUM_ANNUAL }}
+          VITE_STRIPE_ELITE_MONTHLY: ${{ secrets.VITE_STRIPE_ELITE_MONTHLY }}
+          VITE_STRIPE_ELITE_ANNUAL: ${{ secrets.VITE_STRIPE_ELITE_ANNUAL }}
+          VITE_STRIPE_BUSINESS_MONTHLY: ${{ secrets.VITE_STRIPE_BUSINESS_MONTHLY }}
+          VITE_APP_URL: ${{ secrets.VITE_APP_URL }}
+        run: |
+          npx vercel pull --yes --environment=preview --token=$VERCEL_TOKEN
+          npx vercel build --token=$VERCEL_TOKEN
+          PREVIEW_URL=$(npx vercel deploy --prebuilt --token=$VERCEL_TOKEN)
+          echo "preview_url=$PREVIEW_URL" >> $GITHUB_OUTPUT
+
+      - name: Comment preview URL on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🔥 Preview Deployed!\n\n**URL:** ${{ steps.deploy.outputs.preview_url }}\n\nThis preview will be updated on every commit to this PR.`
+            })

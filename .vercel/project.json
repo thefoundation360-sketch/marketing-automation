@@ -1,0 +1,15 @@
+{
+  "projectId": "REPLACE_WITH_VERCEL_PROJECT_ID",
+  "orgId": "REPLACE_WITH_VERCEL_ORG_ID",
+  "settings": {
+    "createdAt": 1718500000000,
+    "framework": "vite",
+    "devCommand": "npm run dev",
+    "installCommand": "npm install",
+    "buildCommand": "npm run build",
+    "outputDirectory": "dist",
+    "rootDirectory": null,
+    "directoryListing": false,
+    "nodeVersion": "22.x"
+  }
+}
