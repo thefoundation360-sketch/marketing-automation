@@ -1,0 +1,87 @@
+{
+  "profile": {
+    "name": "Roycardoes Kelly",
+    "address": "1510 Fatherland St",
+    "city": "Nashville",
+    "state": "TN",
+    "zip": "37206",
+    "phone": "615-738-1214",
+    "email": "thefoundation360@gmail.com",
+    "dob": "12/12/1986",
+    "fico": "563"
+  },
+  "items": [
+    {
+      "creditor": "BISGT / Coastal Community Bank",
+      "acct": "5255",
+      "balance": "0",
+      "basis": "Inaccurate Balance \u2014 reporting $0 balance with adverse/derogatory status; if balance is zero account should reflect closed/paid in good standing or be deleted",
+      "relief": "Delete or update to Paid/Closed in Good Standing"
+    },
+    {
+      "creditor": "First Premier Bank",
+      "acct": "025MT",
+      "balance": "295",
+      "basis": "Inaccurate Account Status \u2014 account status, payment history, and balance must be verified; if charged off, original charge-off date and correct DOFD must be confirmed; any inaccuracy requires deletion",
+      "relief": "Delete if unverifiable; correct balance and status if inaccurate"
+    },
+    {
+      "creditor": "Sunrise Bank / Self Lender (Self Inc.)",
+      "acct": "1N59",
+      "balance": "0",
+      "basis": "Inaccurate \u2014 reporting $0 balance with adverse notation; a zero-balance account should not report as derogatory; verify DOFD and payment history accuracy",
+      "relief": "Delete adverse notation or remove account entirely"
+    },
+    {
+      "creditor": "Tilt / Finnings",
+      "acct": "RN24",
+      "balance": "440",
+      "basis": "Inaccurate Account Status \u2014 balance, payment history, DOFD, and account status must all be verified with original documentation; furnisher must confirm Metro 2 compliance",
+      "relief": "Delete if unverifiable; correct all inaccurate fields"
+    },
+    {
+      "creditor": "TN Dept of Human Services Child Support (TDHS)",
+      "acct": "5563",
+      "balance": "17629",
+      "basis": "Inaccurate Balance and Reporting Date \u2014 the reported balance of $17,629 must be verified against official court/agency records; any discrepancy in amount, payment history, or reporting dates is a violation of FCRA \u00a7 623(a)(1); demand full documentation from furnisher",
+      "relief": "Verify and correct exact balance; delete if furnisher cannot provide complete documentation"
+    },
+    {
+      "creditor": "LNKM Fundings LLC",
+      "acct": "BD6",
+      "balance": "636",
+      "basis": "Inaccurate / Unverifiable \u2014 account status, origination date, DOFD, and balance must be verified; furnisher must supply original signed agreement and complete account history; any gap in documentation requires deletion",
+      "relief": "Delete if furnisher cannot fully verify with original documentation"
+    },
+    {
+      "creditor": "WEBWRIGHT / 4000 (Unauthorized Hard Inquiry)",
+      "acct": "N/A",
+      "balance": "0",
+      "basis": "Unauthorized Hard Inquiry \u2014 I did not authorize WEBWRIGHT/4000 to access my credit file; this inquiry has no permissible purpose under FCRA \u00a7 604; two unauthorized inquiries dated 10/26/2024 and 06/26/2024",
+      "relief": "Delete both unauthorized hard inquiries immediately"
+    },
+    {
+      "creditor": "FEDEXSTNY (Unauthorized Hard Inquiry)",
+      "acct": "N/A",
+      "balance": "0",
+      "basis": "Unauthorized Hard Inquiry \u2014 I did not authorize FEDEXSTNY to access my credit file; no permissible purpose under FCRA \u00a7 604; two inquiries dated 10/26/2024 and 08/26/2024",
+      "relief": "Delete both unauthorized hard inquiries immediately"
+    }
+  ],
+  "collectors": [
+    {
+      "name": "LNKM Fundings LLC",
+      "address": "[Obtain from credit report or Google LNKM Fundings LLC address]",
+      "acct": "BD6",
+      "amount": "636",
+      "original_creditor": "LNKM Fundings LLC (original lender)"
+    },
+    {
+      "name": "Tilt / Finnings",
+      "address": "[Obtain from credit report or correspondence]",
+      "acct": "RN24",
+      "amount": "440",
+      "original_creditor": "Tilt / Finnings"
+    }
+  ]
+}
