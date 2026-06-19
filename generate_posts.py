@@ -4,15 +4,18 @@ Backcountry Brotherhood — 30-Day Facebook Content Generator
 Authentic hunting and fishing content for Baby Boomer men (ages 60-75)
 
 Usage:
-    python generate_posts.py                          # All 30 posts
-    python generate_posts.py --type nostalgia         # Filter by type
-    python generate_posts.py --output my_posts.csv    # Custom filename
+    python generate_posts.py                           # CSV, all 30 posts
+    python generate_posts.py --type nostalgia          # Filter by type
+    python generate_posts.py --format json             # JSON output
+    python generate_posts.py --format both             # CSV + JSON
+    python generate_posts.py --output schedule.csv     # Custom filename
 
 Content types: nostalgia, gear_review, question_poll,
                scenic_caption, affiliate_roundup, video_script
 """
 
 import csv
+import json
 import sys
 import argparse
 
@@ -25,11 +28,9 @@ VALID_TYPES = [
     "video_script",
 ]
 
-# Affiliate slot appears on these calendar days regardless of content type
 AFFILIATE_DAYS = {1, 5, 8, 12, 15, 19, 22, 26, 29}
 
-# 30 days of content — one entry per day, in order
-# Each entry: post_type, hook, body, cta, hashtags
+# ── 30-Day Post Content ────────────────────────────────────────────────────────
 CONTENT = [
     # ── DAY 1 ── Nostalgia | Affiliate: Yes
     {
@@ -439,12 +440,169 @@ CONTENT = [
     },
 ]
 
+# ── Supplemental metadata (image prompts, timing, engagement tips) ─────────────
+# Image prompts describe ideal visuals for a FACELESS page — no faces ever shown.
+SUPPLEMENTS = {
+    1: {
+        "image_prompt": "Worn rifle cleaning kit and oil cloth on a scratched wood table beside a steaming coffee thermos, 4am darkness through a frosted window, single kerosene lamp glow. No people visible.",
+        "best_time": "7:00 AM EST",
+        "engagement_tip": "Reply to every comment using the person's name — Baby Boomers respond strongly to personal acknowledgment. Pin a follow-up comment: 'Tell us his name below.'",
+    },
+    2: {
+        "image_prompt": "Caked-mud hunting boots propped against a mossy log in late-November timber, golden light low through bare trees. Authentic wear and tear. No people.",
+        "best_time": "8:00 PM EST",
+        "engagement_tip": "Pin affiliate link as a comment within the first hour. Respond to every 'What brand?' question with the link directly in reply.",
+    },
+    3: {
+        "image_prompt": "Rifle, compound bow, and muzzleloader arranged on a weathered fence rail, autumn field behind them. Clean flat-light composition. No people.",
+        "best_time": "12:00 PM EST",
+        "engagement_tip": "Post your own answer ('Rifle — because I'm hunting meat, not proving something') as the first comment to seed the debate. Reply to every answer to keep momentum.",
+    },
+    4: {
+        "image_prompt": "Still lake at first light, mist rising, single fishing rod propped at the bank, horizon glowing orange into gray. No people. Landscape orientation.",
+        "best_time": "6:30 AM EST",
+        "engagement_tip": "Share to 3-5 hunting/fishing Facebook Groups within 30 minutes of posting. Morning scenic content peaks early and needs distribution speed.",
+    },
+    5: {
+        "image_prompt": "Merino base layer, headlamp, hand warmers, and vacuum thermos arranged on a hunting pack in the predawn dark. Practical flat lay. Soft warm lamp light.",
+        "best_time": "7:30 PM EST",
+        "engagement_tip": "Pin all 3 affiliate links as a formatted comment list. Respond to price questions with the exact link, not 'check comments' — reduce friction.",
+    },
+    6: {
+        "image_prompt": "Dense lodgepole pine forest at first light, fog threading through the trunks, completely still. Moody and cinematic. No people, no movement.",
+        "best_time": "9:00 PM EST",
+        "engagement_tip": "Front-load the first 3 seconds with text overlay of the hook line — Facebook autoplay is silent. Caption should read exactly like a text message, not a post.",
+    },
+    7: {
+        "image_prompt": "Vintage bolt-action rifle with scratched walnut stock and worn leather sling resting across a split-rail fence, open field behind it. No people.",
+        "best_time": "7:00 AM EST",
+        "engagement_tip": "This post generates high comment volume from name-dropping specific guns. Reply to every make/model with 'Good rifle. How long have you had it?' to extend threads.",
+    },
+    8: {
+        "image_prompt": "Rifle scope mounted on a bolt-action, glass element catching early morning light, mountains or timber in soft focus behind it. No people. Close-up on the glass.",
+        "best_time": "8:00 PM EST",
+        "engagement_tip": "Pin affiliate link within first hour. Add a second comment: 'Running anything else on that rifle? Drop your full setup below.' Keep the gear conversation going.",
+    },
+    9: {
+        "image_prompt": "Hunter's boots on a dirt trail in a national forest, shot from above showing just feet and the leaf-covered path. State or national forest signage blurred in background.",
+        "best_time": "12:00 PM EST",
+        "engagement_tip": "This sparks strong opinions. Let the debate run — don't moderate. Only step in to ask follow-up questions ('What state?' or 'Pressure bad there?') to keep threads alive.",
+    },
+    10: {
+        "image_prompt": "Frost crystals covering fallen oak leaves and ferns on the forest floor at dawn, low morning mist above the ground, first golden light breaking through. No people.",
+        "best_time": "6:30 AM EST",
+        "engagement_tip": "Share to local state hunting groups immediately after posting. First-frost content is highly seasonal and regional — it resonates hardest when timely.",
+    },
+    11: {
+        "image_prompt": "Open tackle box with organized lures on a wood dock, spinning reel and rod beside it, lake surface shimmering out of focus in background. Warm morning light.",
+        "best_time": "7:30 PM EST",
+        "engagement_tip": "Pin a formatted comment: 'Everything linked below ↓ [reel] [line] [net]'. Keep it clean and scannable — Boomers don't scroll deep into comment threads.",
+    },
+    12: {
+        "image_prompt": "Meat bags and boned-out quarters hanging in a pine tree at timberline, snow-dusted peaks beyond, blue sky. Camp scene. No visible faces.",
+        "best_time": "9:00 PM EST",
+        "engagement_tip": "Repost this video in elk hunting Facebook groups during the video's first 48 hours. Educational how-to content earns more saves and shares than opinion content.",
+    },
+    13: {
+        "image_prompt": "Fresh deer track pressed deep in creek-side mud, worn boot sole visible at the very edge of the frame beside the track. Dawn light. Close-up.",
+        "best_time": "7:00 AM EST",
+        "engagement_tip": "Ask a follow-up question in comments: 'When's the last time you spent a full day scouting without a camera?' — keeps the nostalgia thread going another cycle.",
+    },
+    14: {
+        "image_prompt": "Four-panel seasonal image: orange October whitetail timber (top-left), April bass lake at dawn (top-right), July mountain trout stream (bottom-left), November frozen duck marsh (bottom-right).",
+        "best_time": "12:00 PM EST",
+        "engagement_tip": "Reply to every month comment with a follow-up question specific to that season. 'October — are you a rut hunter or do you prefer early season?' Depth over breadth.",
+    },
+    15: {
+        "image_prompt": "Quality fixed-blade hunting knife resting diagonally across a naturally-shed deer antler on weathered barn wood. High contrast. No people.",
+        "best_time": "8:00 PM EST",
+        "engagement_tip": "Pin affiliate link within first hour. Respond to 'What brand?' with the link directly. Add a second comment: 'What do you keep your edge with? Whetstone or strop?'",
+    },
+    16: {
+        "image_prompt": "Clear mountain river running over smooth stones, cottonwood trees in early fall gold lining both banks, late-afternoon light filtering through the canopy in rays. No people.",
+        "best_time": "5:00 PM EST",
+        "engagement_tip": "Late afternoon is peak 'winding down' time for retired Boomers. Nostalgic river content at this hour performs well. Ask for river names — geographic specificity drives engagement.",
+    },
+    17: {
+        "image_prompt": "Interior of a truck cab from the passenger side — empty rifle case on the back seat, dark morning outside rain-streaked windows, no kill bag. Quiet and honest.",
+        "best_time": "7:00 AM EST",
+        "engagement_tip": "This post earns emotional responses. Don't rush replies — let it breathe. When you reply, keep it brief and affirming. 'That's the real hunt right there.' No emojis.",
+    },
+    18: {
+        "image_prompt": "Organized camp kit flat lay: real first aid kit, roll of duct tape, fire starter kit, moleskin pads, and headlamp on a camo pack in the timber. Practical, no staging.",
+        "best_time": "7:30 PM EST",
+        "engagement_tip": "Format the pinned comment as a numbered list: '1. [kit link] 2. [firestarter] 3. [headlamp]'. Numbered lists read faster for Boomers than bullet points or paragraph links.",
+    },
+    19: {
+        "image_prompt": "Fresh deer scrape beneath a licking branch, mud churned up, multiple hoof prints visible, first morning light filtering through bare timber. No people. Ground-level shot.",
+        "best_time": "9:00 PM EST",
+        "engagement_tip": "Evening video posts catch the hunting audience winding down. Pin the affiliate link comment. Add: 'Seen rut sign yet this year? Drop your state and what you're seeing.'",
+    },
+    20: {
+        "image_prompt": "Two hunting packs propped against a large oak tree trunk at first light, two pairs of boots visible below frame in the leaves, fog in the timber beyond. No faces.",
+        "best_time": "12:00 PM EST",
+        "engagement_tip": "Midday poll gets lunch-break engagement. Reply to solo hunters and buddy hunters differently — validate each choice before asking the follow-up. Don't take sides.",
+    },
+    21: {
+        "image_prompt": "Spike camp wall tent in a high mountain meadow at dusk, fire ring glowing orange, dark timber silhouetted behind, first stars appearing above the peaks. No people.",
+        "best_time": "8:00 PM EST",
+        "engagement_tip": "Evening scenic posts get more shares than morning ones. Caption 'Share this with the man who needs to unplug' earns organic reach. Make sharing the CTA, not commenting.",
+    },
+    22: {
+        "image_prompt": "Large weathered hunting boots and a small child's boots side by side on a wooden porch, morning light. Simple, black-and-white toned for emotional weight. No people above ankle.",
+        "best_time": "7:00 AM EST",
+        "engagement_tip": "This is your highest-reach post of the month — tag-a-dad content is the single best organic reach driver for this audience. Reply to every tag. Read every name.",
+    },
+    23: {
+        "image_prompt": "Rangefinder unit in a gloved hand raised toward a distant mountain ridge, blurred elk-country terrain behind it. Close-up on device face. No face visible.",
+        "best_time": "8:00 PM EST",
+        "engagement_tip": "Ask the specific follow-up: 'What distance did your longest clean kill come at?' — this pulls in gear discussion and personal stories simultaneously. Pin link in first comment.",
+    },
+    24: {
+        "image_prompt": "Wide-angle alpine lake at high altitude, ringed by rocky peaks, fly fisherman wading from behind — wide enough that the figure is small in the frame. Mirror reflection on water. No face.",
+        "best_time": "9:00 PM EST",
+        "engagement_tip": "Backcountry fishing video content earns shares from people tagging their hiking/fishing buddies — a slightly different audience. Caption should live completely without the video.",
+    },
+    25: {
+        "image_prompt": "Side-by-side image: glassy mountain lake at dawn with single fishing rod silhouette (left), rushing freestone river with fly line mid-cast over the water (right). No people's faces.",
+        "best_time": "12:00 PM EST",
+        "engagement_tip": "Split-question polls generate twice the comment volume of single questions. Reply to every lake answer with 'What lake?' and every river answer with 'What river?' — keep it personal.",
+    },
+    26: {
+        "image_prompt": "Lone figure seen from behind, hunting pack on back, standing on a high ridgeline overlooking a vast mountain valley, dawn light breaking behind distant peaks. No face visible. Epic scale.",
+        "best_time": "6:30 AM EST",
+        "engagement_tip": "This is a shareability post, not a comment post. Make the share CTA explicit: 'Pass this on to the man in your life who needs to hear it.' Shares drive reach, not comments.",
+    },
+    27: {
+        "image_prompt": "Cane pole lying in the grass beside a small clear-water creek, red-and-white bobber, old coffee can with dirt still on it beside the pole. Simple. Nostalgic. No people.",
+        "best_time": "7:00 AM EST",
+        "engagement_tip": "Ask for the full story, not just a fish name. 'Tell us the whole story' in the CTA earns longer comments, which signals quality to the Facebook algorithm.",
+    },
+    28: {
+        "image_prompt": "Waterproof phone case open to a topo map app, compass and folded paper topo map beside it, all resting on a hunting pack in the field. No people. Natural light.",
+        "best_time": "7:30 PM EST",
+        "engagement_tip": "This post will generate strong 'I use a paper map' responses — validate them. The debate between digital and traditional drives more thread engagement than either side alone.",
+    },
+    29: {
+        "image_prompt": "Medium-action fishing rod and quality baitcasting reel closeup, monofilament line disappearing into dark water, golden-hour light reflecting off the reel spool. No people.",
+        "best_time": "8:00 PM EST",
+        "engagement_tip": "Fishing gear posts perform well when you ask for full setups. 'Drop your full rod/reel/line setup below' gets more engagement than just 'what rod do you use?'",
+    },
+    30: {
+        "image_prompt": "Empty climbing treestand mounted high on a massive oak, bare November branches, frost on the bark, gray pre-dawn sky behind it. Still and quiet. No people.",
+        "best_time": "9:00 PM EST",
+        "engagement_tip": "End on a story post that invites people to one-up you. 'What's the longest you've waited on one specific buck?' — the longer the story the better. This one earns you followers.",
+    },
+}
 
+
+# ── Build output rows ──────────────────────────────────────────────────────────
 def build_rows(filter_type: str | None) -> list[dict]:
     rows = []
     for day_index, post in enumerate(CONTENT, start=1):
         if filter_type and post["post_type"] != filter_type:
             continue
+        sup = SUPPLEMENTS.get(day_index, {})
         rows.append(
             {
                 "Day": day_index,
@@ -454,20 +612,35 @@ def build_rows(filter_type: str | None) -> list[dict]:
                 "CTA": post["cta"],
                 "Hashtags": post["hashtags"],
                 "Affiliate Slot": "Yes" if day_index in AFFILIATE_DAYS else "No",
+                "Image Prompt": sup.get("image_prompt", ""),
+                "Best Time to Post": sup.get("best_time", ""),
+                "Engagement Tip": sup.get("engagement_tip", ""),
             }
         )
     return rows
 
 
-def write_csv(rows: list[dict], output_path: str) -> None:
-    fieldnames = ["Day", "Post Type", "Hook", "Body", "CTA", "Hashtags", "Affiliate Slot"]
-    with open(output_path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+# ── Writers ────────────────────────────────────────────────────────────────────
+CSV_FIELDS = [
+    "Day", "Post Type", "Hook", "Body", "CTA", "Hashtags",
+    "Affiliate Slot", "Image Prompt", "Best Time to Post", "Engagement Tip",
+]
+
+
+def write_csv(rows: list[dict], path: str) -> None:
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=CSV_FIELDS)
         writer.writeheader()
         writer.writerows(rows)
 
 
-def print_summary(rows: list[dict], filter_type: str | None, output_path: str) -> None:
+def write_json(rows: list[dict], path: str) -> None:
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(rows, f, indent=2, ensure_ascii=False)
+
+
+# ── Summary ────────────────────────────────────────────────────────────────────
+def print_summary(rows: list[dict], filter_type: str | None, fmt: str, base: str) -> None:
     type_counts: dict[str, int] = {}
     affiliate_count = 0
     for row in rows:
@@ -478,60 +651,70 @@ def print_summary(rows: list[dict], filter_type: str | None, output_path: str) -
 
     scope = f"({filter_type} only)" if filter_type else "(all types)"
     print(f"\nBackcountry Brotherhood — Content Generated {scope}")
-    print(f"{'─' * 50}")
-    print(f"  Total posts : {len(rows)}")
-    print(f"  Affiliate   : {affiliate_count} posts")
-    print(f"  Output file : {output_path}")
+    print(f"{'─' * 54}")
+    print(f"  Total posts    : {len(rows)}")
+    print(f"  Affiliate slots: {affiliate_count}")
+    files = []
+    if fmt in ("csv", "both"):  files.append(f"{base}.csv")
+    if fmt in ("json", "both"): files.append(f"{base}.json")
+    for f in files:
+        print(f"  Output         : {f}")
     print(f"\n  Posts by type:")
     for post_type in VALID_TYPES:
         count = type_counts.get(post_type, 0)
         if count:
-            affiliate_days = [
-                r["Day"] for r in rows
-                if r["Post Type"] == post_type and r["Affiliate Slot"] == "Yes"
-            ]
-            tag = f"  ← affiliate on day(s) {affiliate_days}" if affiliate_days else ""
-            print(f"    {post_type:<20} {count} post(s){tag}")
+            aff_days = [r["Day"] for r in rows if r["Post Type"] == post_type and r["Affiliate Slot"] == "Yes"]
+            tag = f"  ← affiliate day(s): {aff_days}" if aff_days else ""
+            print(f"    {post_type:<22} {count} post(s){tag}")
     print()
 
 
+# ── CLI ────────────────────────────────────────────────────────────────────────
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Generate 30 days of Facebook content for Backcountry Brotherhood",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="\n".join(
-            [
-                "Examples:",
-                "  python generate_posts.py",
-                "  python generate_posts.py --type nostalgia",
-                "  python generate_posts.py --type gear_review --output gear_only.csv",
-            ]
-        ),
+        epilog="\n".join([
+            "Examples:",
+            "  python generate_posts.py",
+            "  python generate_posts.py --type nostalgia",
+            "  python generate_posts.py --format both",
+            "  python generate_posts.py --format json --output schedule",
+        ]),
     )
     parser.add_argument(
         "--type",
         choices=VALID_TYPES,
         metavar="TYPE",
-        help=(
-            "Filter output to a single content type. "
-            f"Choices: {', '.join(VALID_TYPES)}"
-        ),
+        help=f"Filter to one content type. Choices: {', '.join(VALID_TYPES)}",
+    )
+    parser.add_argument(
+        "--format",
+        choices=["csv", "json", "both"],
+        default="csv",
+        help="Output format: csv (default), json, or both",
     )
     parser.add_argument(
         "--output",
-        default="backcountry_brotherhood_30_days.csv",
-        help="Output CSV filename (default: backcountry_brotherhood_30_days.csv)",
+        default="backcountry_brotherhood_30_days",
+        help="Base output filename without extension (default: backcountry_brotherhood_30_days)",
     )
     args = parser.parse_args()
 
     rows = build_rows(filter_type=args.type)
-
     if not rows:
         print(f"No posts found for type: {args.type}", file=sys.stderr)
         sys.exit(1)
 
-    write_csv(rows, args.output)
-    print_summary(rows, args.type, args.output)
+    # Strip extension if user accidentally included one
+    base = args.output.removesuffix(".csv").removesuffix(".json")
+
+    if args.format in ("csv", "both"):
+        write_csv(rows, f"{base}.csv")
+    if args.format in ("json", "both"):
+        write_json(rows, f"{base}.json")
+
+    print_summary(rows, args.type, args.format, base)
 
 
 if __name__ == "__main__":

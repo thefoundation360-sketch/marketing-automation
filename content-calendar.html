@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Content Calendar — Backcountry Brotherhood</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0d1117;
+      --s1:       #161b22;
+      --s2:       #1c2128;
+      --s3:       #21262d;
+      --border:   #30363d;
+      --text:     #e6edf3;
+      --muted:    #8b949e;
+      --accent:   #3fb950;
+
+      /* Content type colors */
+      --c-nostalgia:        #8957e5;
+      --c-gear_review:      #d29922;
+      --c-question_poll:    #388bfd;
+      --c-scenic_caption:   #3fb950;
+      --c-affiliate_roundup:#f0883e;
+      --c-video_script:     #f85149;
+
+      /* Status colors */
+      --st-not_started: #30363d;
+      --st-drafted:     #388bfd;
+      --st-scheduled:   #d29922;
+      --st-published:   #3fb950;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--s1);
+      border-bottom: 1px solid var(--border);
+      padding: 13px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .hd-left { display: flex; align-items: center; gap: 10px; }
+
+    header h1 { font-size: 16px; font-weight: 700; }
+
+    .hd-badge {
+      background: rgba(63,185,80,0.12);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 9px;
+      border-radius: 20px;
+    }
+
+    .hd-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+    .hd-link {
+      color: var(--muted);
+      font-size: 12px;
+      text-decoration: none;
+      border: 1px solid var(--border);
+      padding: 5px 12px;
+      border-radius: 6px;
+      transition: all 0.12s;
+    }
+    .hd-link:hover { color: var(--text); border-color: var(--muted); }
+
+    /* ── Progress bar ── */
+    .progress-wrap {
+      background: var(--s1);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .progress-bar-outer {
+      flex: 1;
+      min-width: 120px;
+      background: var(--s3);
+      border-radius: 6px;
+      height: 6px;
+      overflow: hidden;
+    }
+
+    .progress-bar-inner {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 6px;
+      transition: width 0.3s;
+    }
+
+    .progress-label { font-size: 12px; color: var(--muted); white-space: nowrap; }
+    .progress-label strong { color: var(--accent); }
+
+    .status-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .st-chip {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: var(--s3);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .st-chip[data-status="not_started"] { color: var(--muted); }
+    .st-chip[data-status="drafted"]     { color: var(--st-drafted); }
+    .st-chip[data-status="scheduled"]   { color: var(--st-scheduled); }
+    .st-chip[data-status="published"]   { color: var(--st-published); }
+    .st-chip.active { border-color: currentColor; }
+
+    /* ── Main ── */
+    main {
+      padding: 18px 16px 60px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar label { font-size: 12px; color: var(--muted); }
+
+    .toolbar input[type="date"] {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 13px;
+      padding: 6px 10px;
+      font-family: inherit;
+    }
+
+    .toolbar input[type="date"]:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    /* type filter pills */
+    .type-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+
+    .type-pill {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.12s;
+    }
+
+    .type-pill:hover { border-color: currentColor; color: var(--text); }
+    .type-pill.active { border-color: currentColor; }
+    .type-pill[data-t="all"].active    { color: var(--text); border-color: var(--text); }
+    .type-pill[data-t="nostalgia"].active         { color: var(--c-nostalgia); border-color: var(--c-nostalgia); }
+    .type-pill[data-t="gear_review"].active        { color: var(--c-gear_review); border-color: var(--c-gear_review); }
+    .type-pill[data-t="question_poll"].active      { color: var(--c-question_poll); border-color: var(--c-question_poll); }
+    .type-pill[data-t="scenic_caption"].active     { color: var(--c-scenic_caption); border-color: var(--c-scenic_caption); }
+    .type-pill[data-t="affiliate_roundup"].active  { color: var(--c-affiliate_roundup); border-color: var(--c-affiliate_roundup); }
+    .type-pill[data-t="video_script"].active       { color: var(--c-video_script); border-color: var(--c-video_script); }
+
+    /* ── Calendar ── */
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+
+    .cal-dow {
+      text-align: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 5px 0;
+    }
+
+    .cal-cell {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      min-height: 90px;
+      padding: 7px;
+      cursor: pointer;
+      transition: border-color 0.12s, background 0.12s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cal-cell:hover { border-color: var(--muted); }
+    .cal-cell.empty { background: rgba(13,17,23,0.4); cursor: default; border-color: rgba(48,54,61,0.4); }
+    .cal-cell.dimmed { opacity: 0.35; }
+    .cal-cell.today-cell { border-color: var(--accent) !important; }
+
+    .cell-day {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .cell-date { font-size: 10px; color: var(--s3); }
+    .aff-dot { color: var(--c-affiliate_roundup); font-size: 12px; line-height: 1; }
+
+    .type-strip {
+      height: 3px;
+      border-radius: 2px;
+      margin-bottom: 5px;
+    }
+
+    .cell-type {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-bottom: 4px;
+    }
+
+    .cell-hook {
+      font-size: 11px;
+      color: var(--text);
+      line-height: 1.35;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .status-bar {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 3px;
+    }
+
+    /* ── Panel overlay ── */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 100;
+      backdrop-filter: blur(3px);
+    }
+    .overlay.open { display: block; }
+
+    .panel {
+      position: fixed;
+      top: 0; right: 0; bottom: 0;
+      width: min(560px, 100vw);
+      background: var(--s1);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      z-index: 101;
+      overflow: hidden;
+      transform: translateX(100%);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .panel.open { transform: translateX(0); }
+
+    .panel-head {
+      padding: 16px 18px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .panel-meta { display: flex; flex-direction: column; gap: 6px; }
+
+    .panel-day-num {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .panel-date { font-size: 12px; color: var(--muted); }
+
+    .panel-badges { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+    .p-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 9px;
+      border-radius: 20px;
+      border: 1px solid;
+    }
+
+    .p-badge-aff {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 9px;
+      border-radius: 20px;
+      border: 1px solid var(--c-affiliate_roundup);
+      color: var(--c-affiliate_roundup);
+      background: rgba(240,136,62,0.1);
+    }
+
+    .panel-close {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 5px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .panel-close:hover { background: var(--s3); color: var(--text); }
+
+    .panel-status-row {
+      padding: 10px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .status-label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+
+    .status-select {
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 10px;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .status-select:focus { outline: none; border-color: var(--accent); }
+
+    .panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 18px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .panel-body::-webkit-scrollbar { width: 4px; }
+    .panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ── Post sections ── */
+    .post-section { display: flex; flex-direction: column; gap: 5px; }
+
+    .sec-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sec-text {
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--text);
+    }
+
+    .sec-text.hook-text { font-weight: 600; font-style: italic; font-size: 14px; }
+
+    .sec-text.hashtag-text {
+      color: var(--c-question_poll);
+      font-size: 12px;
+      letter-spacing: 0.2px;
+    }
+
+    .sec-text.image-text { color: var(--muted); font-size: 12px; font-style: italic; }
+
+    .tip-box {
+      background: rgba(56,139,253,0.07);
+      border: 1px solid rgba(56,139,253,0.25);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .tip-box strong { color: var(--c-question_poll); display: block; margin-bottom: 3px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+
+    .time-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(210,153,34,0.1);
+      border: 1px solid rgba(210,153,34,0.3);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--c-gear_review);
+    }
+
+    /* ── Copy buttons ── */
+    .copy-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: inherit;
+      transition: all 0.12s;
+    }
+    .copy-btn:hover { background: var(--s3); color: var(--text); }
+    .copy-btn.ok { color: var(--accent); }
+
+    .copy-all-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      width: 100%;
+      padding: 11px;
+      background: var(--accent);
+      color: #0a1f0f;
+      font-size: 13px;
+      font-weight: 700;
+      border: none;
+      border-radius: 7px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.12s;
+    }
+    .copy-all-btn:hover { background: #4bcf5e; }
+    .copy-all-btn.ok { background: var(--s3); color: var(--accent); border: 1px solid var(--accent); }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 2px 0;
+    }
+
+    /* ── Legend ── */
+    .legend {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+      align-items: center;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .legend-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .legend-sep { color: var(--border); }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(6px);
+      background: var(--s1);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 200;
+      transition: opacity 0.2s, transform 0.2s;
+      white-space: nowrap;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .cal-cell { min-height: 70px; padding: 5px; }
+      .cell-hook { display: none; }
+      .cell-type { font-size: 9px; }
+      .type-pills { margin-left: 0; }
+      .toolbar { gap: 8px; }
+      header h1 { font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="hd-left">
+    <span style="font-size:18px">📅</span>
+    <h1>Content Calendar</h1>
+    <span class="hd-badge">Backcountry Brotherhood</span>
+  </div>
+  <div class="hd-right">
+    <a href="affiliate-manager.html" class="hd-link">🎯 Affiliate Manager</a>
+  </div>
+</header>
+
+<!-- Progress -->
+<div class="progress-wrap">
+  <div class="progress-bar-outer">
+    <div class="progress-bar-inner" id="progBar" style="width:0%"></div>
+  </div>
+  <span class="progress-label" id="progLabel"><strong>0</strong> / 30 published</span>
+  <div class="status-chips">
+    <span class="st-chip" data-status="not_started" id="chip-not_started">● 30 not started</span>
+    <span class="st-chip" data-status="drafted"     id="chip-drafted">● 0 drafted</span>
+    <span class="st-chip" data-status="scheduled"   id="chip-scheduled">● 0 scheduled</span>
+    <span class="st-chip" data-status="published"   id="chip-published">● 0 published</span>
+  </div>
+</div>
+
+<!-- Main -->
+<main>
+  <div class="toolbar">
+    <label for="startDate">Start date</label>
+    <input type="date" id="startDate">
+    <div class="type-pills" id="typePills"></div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend" id="legend"></div>
+
+  <!-- Calendar grid -->
+  <div class="cal-grid" id="calGrid"></div>
+</main>
+
+<!-- Panel overlay -->
+<div class="overlay" id="overlay" onclick="closePanel()"></div>
+
+<!-- Detail panel -->
+<div class="panel" id="panel">
+  <div class="panel-head">
+    <div class="panel-meta">
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="panel-day-num" id="pDayNum">Day 1</span>
+        <span class="panel-date" id="pDate"></span>
+      </div>
+      <div class="panel-badges" id="pBadges"></div>
+    </div>
+    <button class="panel-close" onclick="closePanel()">&#215;</button>
+  </div>
+  <div class="panel-status-row">
+    <span class="status-label">Status</span>
+    <select class="status-select" id="statusSelect" onchange="updateStatus()">
+      <option value="not_started">Not Started</option>
+      <option value="drafted">Drafted</option>
+      <option value="scheduled">Scheduled</option>
+      <option value="published">Published</option>
+    </select>
+  </div>
+  <div class="panel-body" id="panelBody"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────────────────
+const AFFILIATE_DAYS = new Set([1,5,8,12,15,19,22,26,29]);
+
+const TYPE_COLORS = {
+  nostalgia:         '#8957e5',
+  gear_review:       '#d29922',
+  question_poll:     '#388bfd',
+  scenic_caption:    '#3fb950',
+  affiliate_roundup: '#f0883e',
+  video_script:      '#f85149',
+};
+
+const TYPE_LABELS = {
+  nostalgia:         'Nostalgia',
+  gear_review:       'Gear Review',
+  question_poll:     'Question / Poll',
+  scenic_caption:    'Scenic Caption',
+  affiliate_roundup: 'Affiliate Roundup',
+  video_script:      'Video Script',
+};
+
+const STATUS_COLORS = {
+  not_started: '#30363d',
+  drafted:     '#388bfd',
+  scheduled:   '#d29922',
+  published:   '#3fb950',
+};
+
+const POSTS = [
+  { day:1,  type:'nostalgia',         time:'7:00 AM EST',  hook:"There's something about the smell of gun oil and fresh coffee at 4am that can't be explained to someone who's never felt it.", body:"My dad would have the truck running and the thermos full before I even had my boots tied. We didn't talk much on those drives out, but I understood everything. That silence meant we were doing something that mattered. Those mornings made me the man I am — and I think about them more now that he's gone.", cta:"If your old man took you out before sunrise, tag him or drop his name below. Let's honor them today.", hashtags:"#BackcountryBrotherhood #HuntingDad #OpeningDayMemories #OutdoorLegacy #WhitetailHunting", img:"Worn rifle cleaning kit and oil cloth on a scratched wood table beside a steaming coffee thermos, 4am darkness through a frosted window, single kerosene lamp glow. No people visible.", tip:"Reply to every comment using the person's name — Baby Boomers respond strongly to personal acknowledgment. Pin a follow-up comment: 'Tell us his name below.'" },
+  { day:2,  type:'gear_review',       time:'8:00 PM EST',  hook:"I've worn a lot of hunting boots over 40 years. These are the ones I'd buy again without thinking twice.", body:"Waterproofing that actually works past the first season. A sole with enough grip to handle steep shale without turning your ankle. And insulation that keeps your feet warm without making them sweat through by 9am — that combination is rarer than people think. I wore these through a late November elk season in Colorado and never once thought about my feet.", cta:"Link in comments. What boots have you trusted long enough to buy a second pair?", hashtags:"#HuntingBoots #ElkHunting #BackcountryBrotherhood #HuntingGear #OutdoorGear", img:"Caked-mud hunting boots propped against a mossy log in late-November timber, golden light low through bare trees. Authentic wear. No people.", tip:"Pin affiliate link as a comment within the first hour. Respond to every 'What brand?' question with the link directly in reply." },
+  { day:3,  type:'question_poll',     time:'12:00 PM EST', hook:"Here's a question that'll sort out a room of hunters fast: rifle, bow, or muzzleloader?", body:"I've hunted with all three and each one demands something different from you. The rifle rewards precision and patience. The bow rewards discipline and dedication that most men won't put in. The muzzleloader gives you one shot and a lungful of smoke — and that's it. Every man has a strong opinion about which one builds the better hunter.", cta:"Drop your weapon of choice in the comments. Defend your answer.", hashtags:"#HuntingPoll #BowhuntingVsRifle #MuzzleloaderHunting #BackcountryBrotherhood #WhitetailHunting", img:"Rifle, compound bow, and muzzleloader arranged on a weathered fence rail, autumn field behind them. Clean flat-light composition. No people.", tip:"Post your own answer ('Rifle — because I'm hunting meat, not proving something') as the first comment to seed the debate. Reply to every answer to keep momentum." },
+  { day:4,  type:'scenic_caption',    time:'6:30 AM EST',  hook:"Sunrise over still water. There's no better alarm clock in the world.", body:"You earn this view by getting up before you want to and going somewhere most people won't bother. The coffee's still hot, the fog is just starting to lift off the water, and for a few minutes before the world wakes up it feels like the whole place belongs to you. This is why we do it — not just for the fish or the deer, but for this.", cta:"Share this with someone who needs to be reminded what they're missing.", hashtags:"#SunriseHunting #MorningOnTheWater #BackcountryBrotherhood #OutdoorLife #NaturePhotography", img:"Still lake at first light, mist rising, single fishing rod propped at the bank, horizon glowing orange into gray. No people. Landscape orientation.", tip:"Share to 3–5 hunting/fishing Facebook Groups within 30 minutes of posting. Morning scenic content peaks early and needs distribution speed." },
+  { day:5,  type:'affiliate_roundup', time:'7:30 PM EST',  hook:"Three pieces of gear that paid for themselves in the first season. Straight talk, no fluff.", body:"A headlamp you can actually use with gloves on. Hand warmers that last longer than the cheap ones you've been grabbing at the gas station. And a quality merino wool base layer that handles both sweating on the way in and sitting cold for three hours on the way out. These aren't glamour items — they're the gear that separates a good morning from a miserable one.", cta:"Links in comments. What's the one piece of gear you'd never leave home without?", hashtags:"#HuntingGear #BackcountryBrotherhood #GearReview #OutdoorGear #WhitetailHunting", img:"Merino base layer, headlamp, hand warmers, and vacuum thermos arranged on a hunting pack in the predawn dark. Practical flat lay.", tip:"Pin all 3 affiliate links as a formatted comment list. Respond to price questions with the exact link, not 'check comments' — reduce friction." },
+  { day:6,  type:'video_script',      time:'9:00 PM EST',  hook:"This is what it sounds like at 5am in elk country. Just listen.", body:"No narration for the first 30 seconds — just the timber before first light. Then a bugle in the distance. Then another one, closer. Then you put the camera down and start moving. That's the moment every mile of scouting, every early morning, every off-season leads to — and you don't forget what it sounds like.", cta:"Full video in comments. Tell us where you've heard a bull bugle and how close he got.", hashtags:"#ElkHunting #BullElk #BackcountryBrotherhood #ElkBugle #HuntingVideos", img:"Dense lodgepole pine forest at first light, fog threading through the trunks, completely still. Moody and cinematic. No people, no movement.", tip:"Front-load the first 3 seconds with text overlay of the hook line — Facebook autoplay is silent. Caption should read exactly like a text message, not a post." },
+  { day:7,  type:'nostalgia',         time:'7:00 AM EST',  hook:"My first deer rifle was a hand-me-down with a scratched stock and a loose sling. I wouldn't trade it for anything in a glass case.", body:"Dad bought it used from a guy at the gas station for forty bucks and said it would do the job if I did mine. He was right. I killed my first buck with that gun at 14 years old and I still remember every detail of that morning — the cold, the way he dropped, the handshake. Some things just stay with you.", cta:"What was your first deer rifle? Drop the make and model in the comments.", hashtags:"#FirstDeer #HuntingLegacy #OldRifles #BackcountryBrotherhood #WhitetailHunting", img:"Vintage bolt-action rifle with scratched walnut stock and worn leather sling resting across a split-rail fence, open field behind it. No people.", tip:"Reply to every make/model comment. Ask: 'How long have you had it?' Specific guns generate long nostalgic threads from Boomers." },
+  { day:8,  type:'gear_review',       time:'8:00 PM EST',  hook:"This scope changed everything about my long-range shots. I'll tell you exactly why.", body:"I ran budget glass for years because that's what the budget allowed. But after a buddy let me look through a quality riflescope last fall, I understood what I'd been missing — especially at dusk when you're trying to pick out a deer in the tree line. The clarity at the end of legal light isn't a luxury when the shot matters. It's part of the equipment doing its job.", cta:"Link in comments. What scope are you running right now?", hashtags:"#RifleScope #LongRangeShooting #BackcountryBrotherhood #HuntingGear #WhitetailHunting", img:"Rifle scope mounted on a bolt-action, glass element catching early morning light, mountains or timber in soft focus behind it. Close-up on the glass. No people.", tip:"Pin affiliate link within first hour. Add a second comment: 'Running anything else on that rifle? Drop your full setup below.' Keep the gear conversation going." },
+  { day:9,  type:'question_poll',     time:'12:00 PM EST', hook:"Public land or private land — where do you do most of your hunting?", body:"Public land hunting is hard. You're competing with every other hunter in the county for deer that have been educated by pressure. But there's a real pride in killing a good buck off public ground that's hard to match. Private land has its advantages, no question — but some would say it makes for a different kind of hunter.", cta:"Tell us where you hunt and why in the comments. We want to hear it.", hashtags:"#PublicLandHunting #PrivateLand #BackcountryBrotherhood #WhitetailHunting #HunterLife", img:"Hunter's boots on a dirt trail in a national forest, shot from above showing just feet and the leaf-covered path. State or national forest signage blurred in background.", tip:"This sparks strong opinions. Let the debate run — don't moderate. Only step in to ask follow-up questions ('What state?' or 'Pressure bad there?') to keep threads alive." },
+  { day:10, type:'scenic_caption',    time:'6:30 AM EST',  hook:"First frost of the season. The woods change overnight when this happens.", body:"Every track reads clear, every sound carries further, and the deer start moving differently. There's a chill in your lungs that reminds you you're alive. The woods in October carry something old and serious in them — impossible to explain to someone who hasn't been out there when it settles in.", cta:"Tag someone who knows exactly what this morning feels like.", hashtags:"#FirstFrost #OctoberHunting #BackcountryBrotherhood #WhitetailDeer #HuntingLife", img:"Frost crystals covering fallen oak leaves and ferns on the forest floor at dawn, low morning mist above the ground, first golden light breaking through. No people.", tip:"Share to local state hunting groups immediately after posting. First-frost content is highly seasonal — it resonates hardest when timely." },
+  { day:11, type:'affiliate_roundup', time:'7:30 PM EST',  hook:"Fishing gear worth spending real money on — and what you can buy cheap without losing sleep.", body:"Spend money on your reel and never cut corners on your line. But hooks? Brand doesn't matter much on most species. A quality tackle box that actually closes and keeps moisture out will serve you 20 years. And a net with a rubber bag lets you put fish back without tearing them up. The basics done right will beat the gadgets every single time.", cta:"Links in comments. What's the best fishing purchase you've made in the last couple of years?", hashtags:"#FishingGear #TackleBox #BackcountryBrotherhood #FishingTips #OutdoorGear", img:"Open tackle box with organized lures on a wood dock, spinning reel and rod beside it, lake surface shimmering out of focus in background. Warm morning light.", tip:"Format the pinned comment as a numbered list: '1. [reel link] 2. [line] 3. [net]'. Numbered lists read faster for Boomers than paragraph links." },
+  { day:12, type:'video_script',      time:'9:00 PM EST',  hook:"I filmed every step of quartering my bull elk at 9,200 feet. Here's how it's actually done.", body:"This isn't glamorous work — it's heavy, cold, and takes twice as long as you expect the first time. But doing it right means the meat is clean and the animal is respected. We walk through field dressing, skinning, quartering, and cooling — the way it actually works in the backcountry where you can't cut corners.", cta:"Full video in comments. If you picked up something useful, pass it along to your hunting crew.", hashtags:"#ElkHunting #FieldDressing #BackcountryBrotherhood #EatWhatYouKill #HuntingVideos", img:"Meat bags and boned-out quarters hanging in a pine tree at timberline, snow-dusted peaks beyond, blue sky. Camp scene. No visible faces.", tip:"Repost in elk hunting Facebook groups during first 48 hours. Educational how-to content earns more saves and shares than opinion content." },
+  { day:13, type:'nostalgia',         time:'7:00 AM EST',  hook:"We didn't have trail cameras. We had boot leather and patience.", body:"You learned the land by walking it, season after season, until you knew where the deer were going to be before they knew it themselves. There was something deeply satisfying about earning that knowledge the hard way. A lot of guys today spend more time hunting their phone screen than hunting the woods — and the deer know the difference.", cta:"Old school or new school — what do you think matters more, woodsmanship or technology?", hashtags:"#TrailCameras #WhitetailHunting #BackcountryBrotherhood #HunterLife #OutdoorTradition", img:"Fresh deer track pressed deep in creek-side mud, worn boot sole visible at the very edge of the frame beside the track. Dawn light. Close-up.", tip:"Ask a follow-up question in comments: 'When's the last time you spent a full day scouting without a camera?' — keeps the nostalgia thread going another cycle." },
+  { day:14, type:'question_poll',     time:'12:00 PM EST', hook:"What time of year do you love most in the outdoors? We've got a feeling the comments will be all over the map.", body:"Some men come alive in the rut when the big bucks are moving and daylight is cold. Others live for the first day the bass are feeding shallow in spring. A few of you are salmon men or elk men — October in the mountains is your whole year. The outdoors gives you something every month if you know where to look.", cta:"Drop your favorite month in the comments and tell us why it's yours.", hashtags:"#HuntingSeasons #FishingSeasons #BackcountryBrotherhood #OutdoorLife #WhitetailHunting", img:"Four-panel seasonal image: orange October whitetail timber (top-left), April bass lake at dawn (top-right), July mountain trout stream (bottom-left), November frozen duck marsh (bottom-right).", tip:"Reply to every month comment with a follow-up specific to that season. 'October — are you a rut hunter or do you prefer early season?' Depth over breadth." },
+  { day:15, type:'gear_review',       time:'8:00 PM EST',  hook:"A quality hunting knife is the one piece of gear most hunters underestimate until the moment they need it.", body:"I've cleaned deer with $8 blades and with a fixed-blade that cost real money. The difference shows in the details — how long the edge holds, how the handle feels when your hands are cold and wet, whether you trust it when you have to put real pressure on it. A good hunting knife isn't an expense. It's a 20-year investment.", cta:"Link in comments. What knife is in your pack right now?", hashtags:"#HuntingKnife #FixedBlade #BackcountryBrotherhood #HuntingGear #WhitetailHunting", img:"Quality fixed-blade hunting knife resting diagonally across a naturally-shed deer antler on weathered barn wood. High contrast. No people.", tip:"Pin affiliate link within first hour. Respond to 'What brand?' with the link directly. Add a second comment: 'What do you keep your edge with? Whetstone or strop?'" },
+  { day:16, type:'scenic_caption',    time:'5:00 PM EST',  hook:"There's a reason we keep going back to the same river.", body:"It isn't always about the fish. Sometimes it's the sound water makes moving over rocks, or the way light comes through the cottonwoods in late afternoon. Out here nothing can reach you — you can leave whatever's weighing on you at the truck. The river doesn't care what you brought with you.", cta:"Where's your river? Drop the name or describe it in the comments.", hashtags:"#RiverFishing #FlyFishing #BackcountryBrotherhood #NatureHeals #OutdoorLife", img:"Clear mountain river running over smooth stones, cottonwood trees in early fall gold lining both banks, late-afternoon light filtering through the canopy in rays. No people.", tip:"Late afternoon is peak 'winding down' time for retired Boomers. Ask for river names — geographic specificity drives deeper engagement than generic questions." },
+  { day:17, type:'nostalgia',         time:'7:00 AM EST',  hook:"Nobody said a word when we drove home without filling tags. Some trips were just about being out there.", body:"My grandfather taught me that a day in the woods was never wasted, even empty-handed. The woods fed something in you that the rest of life couldn't touch. You left something heavy behind every time you went in. I've passed that on to my kids the best I could — hope it stuck.", cta:"What's a hunting memory you have that had nothing to do with the kill? Tell us.", hashtags:"#HuntingMemories #BackcountryBrotherhood #OutdoorLife #WhitetailDeer #HunterMindset", img:"Interior of a truck cab from the passenger side — empty rifle case on the back seat, dark morning outside rain-streaked windows, no kill bag. Quiet and honest.", tip:"This post earns emotional responses. Don't rush replies — let it breathe. When you reply, keep it brief and affirming. No emojis." },
+  { day:18, type:'affiliate_roundup', time:'7:30 PM EST',  hook:"Five things every hunting camp needs that most guys forget until they're 60 miles in.", body:"A real first aid kit — not the gas station version. Extra batteries for everything that matters. Moleskin for your feet before the blisters start, not after. A backup firestarter that works when it's wet. And duct tape — I've fixed boot soles, pack straps, and tarp seams with it in the backcountry, and the difference between a bad day and a good story is almost always preparation.", cta:"Links in comments. What's your non-negotiable camp item that other guys always forget?", hashtags:"#HuntingCamp #BackcountryHunting #BackcountryBrotherhood #CampGear #ElkHunting", img:"Organized camp kit flat lay: real first aid kit, roll of duct tape, fire starter kit, moleskin pads, and headlamp on a camo pack in the timber. Practical, no staging.", tip:"Format the pinned comment as a numbered list: '1. [kit link] 2. [firestarter] 3. [headlamp]'. Numbered lists read faster than paragraph-style links for this audience." },
+  { day:19, type:'video_script',      time:'9:00 PM EST',  hook:"Watch this whitetail walk in from 400 yards and work the scrape exactly the way the books say. Textbook rut behavior.", body:"You can study deer behavior for years and still get surprised when you see it right in front of you. This buck checked the scrape, hit the licking branch, circled downwind, then walked straight in — no hesitation. The rut makes whitetails do things they'd never do any other month of the year. This is why November matters.", cta:"Full video in comments. Drop your best rut encounter story below.", hashtags:"#RutHunting #WhitetailDeer #BackcountryBrotherhood #ScrapeHunting #HuntingVideos", img:"Fresh deer scrape beneath a licking branch, mud churned up, multiple hoof prints visible, first morning light filtering through bare timber. No people. Ground-level shot.", tip:"Evening video posts catch the audience winding down. Add: 'Seen rut sign yet this year? Drop your state and what you're seeing.' Keeps regional threads alive." },
+  { day:20, type:'question_poll',     time:'12:00 PM EST', hook:"Solo hunt or bring a buddy? There's no wrong answer here — but every man has a strong preference.", body:"There's something about going in alone. Nobody to make noise, nobody to disagree about where to sit — just you and the woods making a deal. But hunting with a good friend or your son is something else entirely: the camp at night, the jokes, the shared memory of a hunt that went exactly right. Both are worth doing.", cta:"Solo or with a partner? Tell us your preference and why.", hashtags:"#SoloHunting #HuntingBuddy #BackcountryBrotherhood #WhitetailHunting #HunterLife", img:"Two hunting packs propped against a large oak tree trunk at first light, two pairs of boots visible below frame in the leaves, fog in the timber beyond. No faces.", tip:"Midday poll gets lunch-break engagement. Reply to solo hunters and buddy hunters differently — validate each choice before asking the follow-up. Don't take sides." },
+  { day:21, type:'scenic_caption',    time:'8:00 PM EST',  hook:"No cell service. No news. No problem.", body:"Three days in elk camp without a single notification. Just the smell of pines, the sound of wind through the timber, and real decisions to make every morning — where to go, how to get there, whether the wind is right. This is the kind of quiet that resets a man. Hard to find it anywhere else.", cta:"When's the last time you truly unplugged? Tell us where you went.", hashtags:"#ElkCamp #BackcountryHunting #BackcountryBrotherhood #OffGrid #OutdoorLife", img:"Spike camp wall tent in a high mountain meadow at dusk, fire ring glowing orange, dark timber silhouetted behind, first stars appearing above the peaks. No people.", tip:"Evening scenic posts get more shares than morning ones. Make sharing the CTA, not commenting — shares drive reach for this type of content." },
+  { day:22, type:'nostalgia',         time:'7:00 AM EST',  hook:"If your dad taught you to hunt, you got something money can't buy.", body:"Not everyone had that. Some of us figured it out alone, or had a neighbor or a coach who took us out the first time. Either way, somebody showed us the way in — and that matters more than they probably knew. The tradition only keeps going if somebody carries it forward. Don't let it end with you.", cta:"Tag someone who taught you something in the field. Let 'em know you haven't forgotten.", hashtags:"#HuntingDad #OutdoorLegacy #BackcountryBrotherhood #PassItOn #HunterLife", img:"Large weathered hunting boots and a small child's boots side by side on a wooden porch, morning light. Simple, black-and-white toned for emotional weight. No people above ankle.", tip:"This is your highest-reach post of the month — tag-a-mentor content is the single best organic reach driver for this audience. Reply to every tag. Read every name." },
+  { day:23, type:'gear_review',       time:'8:00 PM EST',  hook:"I tested this rangefinder in the Rockies last September. Here's the honest report.", body:"Accurate out to 1,000 yards on reflective targets, reliable on deer-sized animals past 600. Angle compensation built in — which matters when you're shooting steeply downhill from a ridge. It's not the cheapest unit on the shelf, but it isn't pretending to be. For elk or mule deer at real distance, guessing costs tags.", cta:"Link in comments. Are you running a rangefinder in the field, or trusting your eye?", hashtags:"#Rangefinder #ElkHunting #BackcountryBrotherhood #HuntingGear #LongRangeShooting", img:"Rangefinder unit in a gloved hand raised toward a distant mountain ridge, blurred elk-country terrain behind it. Close-up on device face. No face visible.", tip:"Ask the specific follow-up: 'What distance did your longest clean kill come at?' — this pulls in gear discussion and personal stories simultaneously." },
+  { day:24, type:'video_script',      time:'9:00 PM EST',  hook:"Fly fishing a high-altitude lake most guys never find because they stop at the trailhead.", body:"Three miles in, 8,400 feet, and the cutthroat trout have never seen a hook. They hit dry flies like they're starving because out here nobody has educated them. The water is the color of green glass and cold enough to take your breath away. You just have to earn it.", cta:"Full video in comments. Have you ever hiked into water that far off the road? Tell us about it.", hashtags:"#FlyFishing #CutthroatTrout #BackcountryFishing #BackcountryBrotherhood #HighAltitudeFishing", img:"Wide-angle alpine lake at high altitude, ringed by rocky peaks, fly fisherman wading from behind — figure small in the frame. Mirror reflection on water. No face.", tip:"Backcountry fishing video earns shares from people tagging hiking/fishing buddies — a slightly different audience. Caption should stand completely without the video." },
+  { day:25, type:'question_poll',     time:'12:00 PM EST', hook:"Lake fishing or river fishing — where do you feel most at home?", body:"A still lake in the morning has its own kind of peace. You can see for miles and the fish come up slow and deliberate. But a river moves and breathes like a living thing — reading the current, finding the seams, matching the hatch on a trout stream is a puzzle worth solving season after season.", cta:"Lake or river? Drop your answer below and tell us where.", hashtags:"#LakeFishing #RiverFishing #TroutFishing #BackcountryBrotherhood #FishingLife", img:"Side-by-side image: glassy mountain lake at sunrise with single fishing rod silhouette (left), rushing freestone river with fly line mid-cast over the water (right). No faces.", tip:"Split-question polls generate twice the comment volume of single questions. Reply to every lake answer with 'What lake?' and every river answer with 'What river?'" },
+  { day:26, type:'scenic_caption',    time:'6:30 AM EST',  hook:"The mountains don't care how old you are. They just ask if you'll show up.", body:"The trail is the same as it was 20 years ago. You're not. But the view at the top doesn't change — and neither does the feeling when you get there. Some men stop going into the backcountry when the years start adding up. The ones who keep going seem to age differently.", cta:"Share this with the man in your life who needs to hear it today.", hashtags:"#BackcountryHunting #MountainHunting #BackcountryBrotherhood #KeepGoing #OutdoorLife", img:"Lone figure seen from behind, hunting pack on back, standing on a high ridgeline overlooking a vast mountain valley, dawn light breaking behind distant peaks. No face visible. Epic scale.", tip:"This is a shareability post, not a comment post. Make the share CTA explicit. Shares drive reach, not comments. Don't ask a question — just invite the share." },
+  { day:27, type:'nostalgia',         time:'7:00 AM EST',  hook:"My first trout came out of a creek you could jump across. Best fish I ever caught.", body:"We used a cane pole and nightcrawlers dug from the garden, and I thought we were the two smartest fishermen alive. My uncle could read water like some men read books — he knew where they'd be holding before we even got a line wet. I still fish that same stretch when I go back home. The creek's smaller than I remember.", cta:"What's the most memorable fish you ever caught — and how old were you? Tell us the whole story.", hashtags:"#TroutFishing #FishingMemories #BackcountryBrotherhood #OutdoorLife #FirstFish", img:"Cane pole lying in the grass beside a small clear-water creek, red-and-white bobber, old coffee can with dirt still on it beside the pole. Simple. Nostalgic. No people.", tip:"Ask for the full story, not just a fish name. 'Tell us the whole story' earns longer comments, which signals quality to the Facebook algorithm." },
+  { day:28, type:'affiliate_roundup', time:'7:30 PM EST',  hook:"The best hunting apps for men who don't want to spend all day staring at a screen.", body:"One for maps and land ownership — knowing who owns what matters more than it used to. One for weather that gives you wind at elevation, not just at your zip code. And one for moon phases, which after 40 years I've started to actually believe in. None of these replace knowing the land. But they've saved me a few wrong turns.", cta:"Links in comments. Are you using apps in the field or going old school with a paper topo?", hashtags:"#HuntingApps #BackcountryHunting #BackcountryBrotherhood #HuntingGear #WhitetailHunting", img:"Waterproof phone case open to a topo map app, compass and folded paper topo map beside it, all resting on a hunting pack in the field. No people. Natural light.", tip:"This post will generate strong 'I use a paper map' responses — validate them. The debate between digital and traditional drives more engagement than either side alone." },
+  { day:29, type:'gear_review',       time:'8:00 PM EST',  hook:"This rod handled a 28-inch walleye without a complaint. It's earned a permanent spot in my truck.", body:"Light enough to fish all day without wearing your wrist out. Sensitive enough to feel a light bite in 20 feet of water. Stiff enough in the backbone when you set the hook hard on something that doesn't want to come in. I've broken budget rods doing exactly this. This one didn't move.", cta:"Link in comments. What rod and reel combo are you fishing right now?", hashtags:"#FishingRod #WalleyeFishing #BackcountryBrotherhood #FishingGear #OutdoorGear", img:"Medium-action fishing rod and quality baitcasting reel closeup, monofilament line disappearing into dark water, golden-hour light reflecting off the reel spool. No people.", tip:"Fishing gear posts perform well when you ask for full setups. 'Drop your full rod/reel/line setup below' gets more engagement than just 'what rod do you use?'" },
+  { day:30, type:'video_script',      time:'9:00 PM EST',  hook:"I sat in this treestand for 11 hours waiting on one specific buck. Here's how that day went.", body:"Most hunting is waiting — real waiting, the kind where you don't move for hours and your back starts making arguments with you. I'd been watching this deer for two seasons and knew his pattern better than my own schedule. Day 11 of the sit, he showed up at last light. Some things take as long as they take.", cta:"Full story in comments. What's the longest you've ever waited on one specific buck?", hashtags:"#TreestandHunting #BigBuck #BackcountryBrotherhood #WhitetailDeer #HuntingPatience", img:"Empty climbing treestand mounted high on a massive oak, bare November branches, frost on the bark, gray pre-dawn sky behind it. Still and quiet. No people.", tip:"End on a story post that invites people to one-up you. 'What's the longest you've waited on one specific buck?' — the longer the story the better. This one earns followers." },
+];
+
+// ── State ──────────────────────────────────────────────────────────────────────
+const SK_STATUS    = 'bb_cal_statuses_v1';
+const SK_START     = 'bb_cal_start_v1';
+const SK_FILTER    = 'bb_cal_filter_v1';
+
+let statuses   = {};
+let startDate  = '';
+let typeFilter = 'all';
+let openDay    = null;
+
+function loadState() {
+  try { statuses = JSON.parse(localStorage.getItem(SK_STATUS)) || {}; } catch { statuses = {}; }
+  startDate  = localStorage.getItem(SK_START) || todayStr();
+  typeFilter = localStorage.getItem(SK_FILTER) || 'all';
+}
+
+function saveStatuses() { localStorage.setItem(SK_STATUS, JSON.stringify(statuses)); }
+function saveStart()    { localStorage.setItem(SK_START, startDate); }
+function saveFilter()   { localStorage.setItem(SK_FILTER, typeFilter); }
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function dayStatus(day) { return statuses[day] || 'not_started'; }
+
+// ── Calendar math ──────────────────────────────────────────────────────────────
+function parseLocalDate(str) {
+  const [y, m, d] = str.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function formatCalDate(d) {
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function calendarStartOffset(startStr) {
+  const dow = parseLocalDate(startStr).getDay(); // 0=Sun
+  return (dow + 6) % 7; // Mon=0 … Sun=6
+}
+
+function dayToDate(day, startStr) {
+  const base = parseLocalDate(startStr);
+  const d = new Date(base);
+  d.setDate(d.getDate() + day - 1);
+  return d;
+}
+
+// ── Legend ────────────────────────────────────────────────────────────────────
+function renderLegend() {
+  const types = Object.entries(TYPE_LABELS);
+  document.getElementById('legend').innerHTML =
+    types.map(([k, v]) => `
+      <div class="legend-item">
+        <span class="legend-dot" style="background:${TYPE_COLORS[k]}"></span>
+        ${v}
+      </div>
+    `).join('<span class="legend-sep">·</span>') +
+    '<span class="legend-sep">·</span>' +
+    '<div class="legend-item"><span style="font-size:12px">💰</span> Affiliate slot</div>';
+}
+
+// ── Type filter pills ─────────────────────────────────────────────────────────
+function renderTypePills() {
+  const types = [['all', 'All'], ...Object.entries(TYPE_LABELS)];
+  document.getElementById('typePills').innerHTML = types.map(([k, v]) => `
+    <button class="type-pill${typeFilter === k ? ' active' : ''}" data-t="${k}" onclick="setTypeFilter('${k}')">${v}</button>
+  `).join('');
+}
+
+function setTypeFilter(t) {
+  typeFilter = t;
+  saveFilter();
+  render();
+}
+
+// ── Progress bar ──────────────────────────────────────────────────────────────
+function renderProgress() {
+  const counts = { not_started: 0, drafted: 0, scheduled: 0, published: 0 };
+  for (let d = 1; d <= 30; d++) counts[dayStatus(d)]++;
+  const pct = Math.round((counts.published / 30) * 100);
+  document.getElementById('progBar').style.width = pct + '%';
+  document.getElementById('progLabel').innerHTML = `<strong>${counts.published}</strong> / 30 published`;
+
+  const labels = { not_started: 'not started', drafted: 'drafted', scheduled: 'scheduled', published: 'published' };
+  for (const [st, label] of Object.entries(labels)) {
+    const el = document.getElementById(`chip-${st}`);
+    el.textContent = `● ${counts[st]} ${label}`;
+  }
+}
+
+// ── Calendar ──────────────────────────────────────────────────────────────────
+const DOWS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+function renderCalendar() {
+  const offset = calendarStartOffset(startDate);
+  const totalCells = offset + 30;
+  const numWeeks = Math.ceil(totalCells / 7);
+  const todayS = todayStr();
+
+  const grid = document.getElementById('calGrid');
+  let html = DOWS.map(d => `<div class="cal-dow">${d}</div>`).join('');
+
+  for (let i = 0; i < numWeeks * 7; i++) {
+    const day = i - offset + 1;
+    if (day < 1 || day > 30) {
+      html += `<div class="cal-cell empty"></div>`;
+      continue;
+    }
+    const post   = POSTS[day - 1];
+    const status = dayStatus(day);
+    const color  = TYPE_COLORS[post.type];
+    const isAff  = AFFILIATE_DAYS.has(day);
+    const dateStr = formatCalDate(dayToDate(day, startDate));
+    const isToday = dayToDate(day, startDate).toISOString().slice(0,10) === todayS;
+    const dimmed  = typeFilter !== 'all' && post.type !== typeFilter;
+
+    html += `
+      <div class="cal-cell${isToday ? ' today-cell' : ''}${dimmed ? ' dimmed' : ''}"
+           onclick="openPanel(${day})" style="border-color:${dimmed ? '' : color}22">
+        <div class="cell-day">
+          <span>Day ${day}</span>
+          <span style="display:flex;align-items:center;gap:4px">
+            ${isAff ? '<span class="aff-dot">💰</span>' : ''}
+            <span class="cell-date">${dateStr}</span>
+          </span>
+        </div>
+        <div class="type-strip" style="background:${color}"></div>
+        <div class="cell-type" style="color:${color}">${TYPE_LABELS[post.type]}</div>
+        <div class="cell-hook">${esc(post.hook)}</div>
+        <div class="status-bar" style="background:${STATUS_COLORS[status]}"></div>
+      </div>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+// ── Panel ──────────────────────────────────────────────────────────────────────
+function openPanel(day) {
+  openDay = day;
+  const post   = POSTS[day - 1];
+  const color  = TYPE_COLORS[post.type];
+  const isAff  = AFFILIATE_DAYS.has(day);
+  const status = dayStatus(day);
+  const dateStr = formatCalDate(dayToDate(day, startDate));
+
+  document.getElementById('pDayNum').textContent = `Day ${day}`;
+  document.getElementById('pDate').textContent = dateStr + ' · ' + post.time;
+  document.getElementById('statusSelect').value = status;
+
+  let badges = `<span class="p-badge" style="color:${color};border-color:${color};background:${color}18">${TYPE_LABELS[post.type]}</span>`;
+  if (isAff) badges += `<span class="p-badge-aff">💰 Affiliate Slot</span>`;
+  document.getElementById('pBadges').innerHTML = badges;
+
+  document.getElementById('panelBody').innerHTML = `
+    <button class="copy-all-btn" id="copyAllBtn" onclick="copyFullPost(${day})">
+      &#128203; Copy Full Post
+    </button>
+
+    <div class="post-section">
+      <div class="sec-label">Hook <button class="copy-btn" onclick="copySection('hook-${day}', this)">Copy</button></div>
+      <div class="sec-text hook-text" id="hook-${day}">${esc(post.hook)}</div>
+    </div>
+
+    <div class="post-section">
+      <div class="sec-label">Body <button class="copy-btn" onclick="copySection('body-${day}', this)">Copy</button></div>
+      <div class="sec-text" id="body-${day}">${esc(post.body)}</div>
+    </div>
+
+    <div class="post-section">
+      <div class="sec-label">CTA <button class="copy-btn" onclick="copySection('cta-${day}', this)">Copy</button></div>
+      <div class="sec-text" id="cta-${day}">${esc(post.cta)}</div>
+    </div>
+
+    <div class="post-section">
+      <div class="sec-label">Hashtags <button class="copy-btn" onclick="copySection('ht-${day}', this)">Copy</button></div>
+      <div class="sec-text hashtag-text" id="ht-${day}">${esc(post.hashtags)}</div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="time-badge">&#128336; Post at ${esc(post.time)}</div>
+
+    <div class="post-section">
+      <div class="sec-label">Image Prompt <button class="copy-btn" onclick="copySection('img-${day}', this)">Copy</button></div>
+      <div class="sec-text image-text" id="img-${day}">${esc(post.img)}</div>
+    </div>
+
+    <div class="tip-box">
+      <strong>&#128200; Engagement Tip</strong>
+      ${esc(post.tip)}
+    </div>
+  `;
+
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('panel').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closePanel() {
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('panel').classList.remove('open');
+  document.body.style.overflow = '';
+  openDay = null;
+}
+
+function updateStatus() {
+  if (openDay === null) return;
+  statuses[openDay] = document.getElementById('statusSelect').value;
+  saveStatuses();
+  renderCalendar();
+  renderProgress();
+}
+
+// ── Copy helpers ──────────────────────────────────────────────────────────────
+function clipCopy(text) {
+  if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
+  return new Promise((res, rej) => {
+    const ta = Object.assign(document.createElement('textarea'), {
+      value: text, style: 'position:fixed;opacity:0;top:0;left:0'
+    });
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy') ? res() : rej(); } catch (e) { rej(e); }
+    document.body.removeChild(ta);
+  });
+}
+
+function copySection(elId, btn) {
+  const text = document.getElementById(elId)?.textContent || '';
+  clipCopy(text).then(() => {
+    btn.textContent = '✓';
+    btn.classList.add('ok');
+    toast('Copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 2000);
+  });
+}
+
+function copyFullPost(day) {
+  const post = POSTS[day - 1];
+  const full = [post.hook, '', post.body, '', post.cta, '', post.hashtags].join('\n');
+  const btn = document.getElementById('copyAllBtn');
+  clipCopy(full).then(() => {
+    btn.textContent = '✓ Copied to clipboard';
+    btn.classList.add('ok');
+    toast(`Day ${day} post copied`);
+    setTimeout(() => { btn.innerHTML = '&#128203; Copy Full Post'; btn.classList.remove('ok'); }, 2200);
+  });
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────────
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ── Escape ────────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render() {
+  renderTypePills();
+  renderCalendar();
+  renderProgress();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadState();
+
+const startInput = document.getElementById('startDate');
+startInput.value = startDate;
+startInput.addEventListener('change', () => {
+  startDate = startInput.value || todayStr();
+  saveStart();
+  render();
+});
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+
+renderLegend();
+render();
+</script>
+</body>
+</html>
