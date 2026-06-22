@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Backcountry Brotherhood — Command Center</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0d1117;
+      --s1:      #161b22;
+      --s2:      #1c2128;
+      --s3:      #21262d;
+      --border:  #30363d;
+      --text:    #e6edf3;
+      --muted:   #8b949e;
+      --accent:  #3fb950;
+      --adim:    #1a3327;
+      --gold:    #d29922;
+      --blue:    #388bfd;
+      --orange:  #f0883e;
+      --red:     #f85149;
+      --purple:  #8957e5;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--s1);
+      border-bottom: 1px solid var(--border);
+      padding: 18px 24px;
+    }
+
+    .hd-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .hd-brand { display: flex; align-items: center; gap: 10px; }
+    .hd-brand h1 { font-size: 18px; font-weight: 700; }
+    .hd-brand span {
+      background: var(--adim);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 9px;
+      border-radius: 20px;
+    }
+
+    .hd-stats { display: flex; gap: 20px; flex-wrap: wrap; }
+    .hd-stat { text-align: center; }
+    .hd-stat-num { font-size: 22px; font-weight: 700; color: var(--accent); line-height: 1; }
+    .hd-stat-lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; margin-top: 2px; }
+
+    /* ── Main ── */
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 16px 60px;
+    }
+
+    /* ── Section titles ── */
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    section { margin-bottom: 32px; }
+
+    /* ── Tool cards ── */
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+    }
+
+    .tool-card {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+      transition: border-color 0.12s, background 0.12s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tool-card:hover { border-color: var(--accent); background: var(--s2); }
+
+    .tool-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+
+    .tool-card.c-green::before  { background: var(--accent); }
+    .tool-card.c-orange::before { background: var(--orange); }
+    .tool-card.c-blue::before   { background: var(--blue); }
+    .tool-card.c-gold::before   { background: var(--gold); }
+
+    .tool-icon { font-size: 24px; margin-bottom: 10px; }
+    .tool-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+    .tool-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .tool-open {
+      display: inline-block;
+      margin-top: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    /* ── Workflow steps ── */
+    .steps { display: flex; flex-direction: column; gap: 10px; }
+
+    .step {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .step.done { border-color: var(--accent); background: rgba(63,185,80,0.04); }
+    .step.active { border-color: var(--gold); }
+
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--s3);
+      border: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+      color: var(--muted);
+    }
+
+    .step.done .step-num  { background: var(--adim); border-color: var(--accent); color: var(--accent); }
+    .step.active .step-num { background: rgba(210,153,34,0.12); border-color: var(--gold); color: var(--gold); }
+
+    .step-body { flex: 1; }
+    .step-title { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+    .step-detail { font-size: 12px; color: var(--muted); }
+    .step-detail a { color: var(--blue); text-decoration: none; }
+    .step-detail a:hover { text-decoration: underline; }
+
+    .step-tag {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    .tag-done  { background: var(--adim); color: var(--accent); }
+    .tag-next  { background: rgba(210,153,34,0.12); color: var(--gold); }
+    .tag-later { background: var(--s3); color: var(--muted); }
+
+    /* ── Affiliate programs table ── */
+    .aff-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .aff-table th {
+      background: var(--s2);
+      padding: 9px 14px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .aff-table td {
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      vertical-align: middle;
+    }
+
+    .aff-table tr:last-child td { border-bottom: none; }
+    .aff-table tr:hover td { background: var(--s2); }
+
+    .comm-badge {
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .comm-high { color: var(--accent); }
+    .comm-mid  { color: var(--gold); }
+    .comm-base { color: var(--muted); }
+
+    .enroll-btn {
+      display: inline-block;
+      padding: 5px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.12s;
+      white-space: nowrap;
+    }
+    .enroll-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .products-count {
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--s3);
+      padding: 2px 7px;
+      border-radius: 20px;
+    }
+
+    /* ── Products reference ── */
+    .prod-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 8px;
+    }
+
+    .prod-card {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 12px 14px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .prod-day {
+      background: var(--s3);
+      border-radius: 5px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .prod-day.aff { background: rgba(240,136,62,0.12); color: var(--orange); }
+
+    .prod-info { flex: 1; min-width: 0; }
+    .prod-name { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+    .prod-meta { font-size: 11px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .prog-dot {
+      display: inline-block;
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      margin-right: 3px;
+      vertical-align: middle;
+    }
+
+    .action-note {
+      background: rgba(56,139,253,0.07);
+      border: 1px solid rgba(56,139,253,0.2);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-top: 10px;
+    }
+
+    .action-note strong { color: var(--blue); }
+
+    /* ── Schedule preview ── */
+    .sched-wrap {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .sched-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 600px;
+    }
+
+    .sched-scroll { overflow-x: auto; }
+
+    .sched-table th {
+      background: var(--s2);
+      padding: 8px 12px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sched-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      vertical-align: middle;
+    }
+
+    .sched-table tr:last-child td { border-bottom: none; }
+    .sched-table tr:hover td { background: var(--s2); }
+
+    .type-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-right: 5px;
+      flex-shrink: 0;
+    }
+
+    .aff-flag {
+      background: rgba(240,136,62,0.12);
+      color: var(--orange);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 20px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .hd-stats { display: none; }
+      .tool-grid { grid-template-columns: 1fr 1fr; }
+      .prod-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="hd-inner">
+    <div class="hd-brand">
+      <span style="font-size:22px">🎯</span>
+      <div>
+        <h1>Backcountry Brotherhood</h1>
+        <div style="font-size:11px;color:var(--muted);margin-top:1px">Facebook Page — Content Operations</div>
+      </div>
+      <span>Command Center</span>
+    </div>
+    <div class="hd-stats">
+      <div class="hd-stat"><div class="hd-stat-num">30</div><div class="hd-stat-lbl">Posts Ready</div></div>
+      <div class="hd-stat"><div class="hd-stat-num">15</div><div class="hd-stat-lbl">Products Loaded</div></div>
+      <div class="hd-stat"><div class="hd-stat-num">9</div><div class="hd-stat-lbl">Affiliate Slots</div></div>
+      <div class="hd-stat"><div class="hd-stat-num">4</div><div class="hd-stat-lbl">Programs</div></div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- Tools -->
+  <section>
+    <div class="section-title">Your Tools</div>
+    <div class="tool-grid">
+      <a href="content-calendar.html" class="tool-card c-green">
+        <div class="tool-icon">📅</div>
+        <div class="tool-name">Content Calendar</div>
+        <div class="tool-desc">Visual 30-day calendar. Click any day to preview the full post, copy it, track status, and find images. Exports a schedule CSV.</div>
+        <span class="tool-open">Open Calendar →</span>
+      </a>
+      <a href="affiliate-manager.html" class="tool-card c-orange">
+        <div class="tool-icon">🎯</div>
+        <div class="tool-name">Affiliate Manager</div>
+        <div class="tool-desc">15 starter products pre-loaded. Replace placeholder URLs with your affiliate links. Tracks copy count per link.</div>
+        <span class="tool-open">Open Manager →</span>
+      </a>
+      <a href="backcountry_brotherhood_30_days.csv" download class="tool-card c-blue">
+        <div class="tool-icon">📊</div>
+        <div class="tool-name">Schedule CSV</div>
+        <div class="tool-desc">All 30 posts with dates (Jun 23 – Jul 22), full paste-ready post text, image prompts, and engagement tips. Import to any scheduler.</div>
+        <span class="tool-open">Download CSV →</span>
+      </a>
+      <a href="backcountry_brotherhood_30_days.json" download class="tool-card c-gold">
+        <div class="tool-icon">{ }</div>
+        <div class="tool-name">Posts JSON</div>
+        <div class="tool-desc">Same 30 posts in JSON format for use with scheduling APIs, Zapier, Make, or any automation tool.</div>
+        <span class="tool-open">Download JSON →</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Launch Workflow -->
+  <section>
+    <div class="section-title">Launch Checklist — Do This In Order</div>
+    <div class="steps">
+
+      <div class="step done">
+        <div class="step-num">✓</div>
+        <div class="step-body">
+          <div class="step-title">30 days of content written <span class="step-tag tag-done">Done</span></div>
+          <div class="step-detail">All posts written with hook, body, CTA, hashtags, image prompt, best posting time, and engagement tip for every day.</div>
+        </div>
+      </div>
+
+      <div class="step done">
+        <div class="step-num">✓</div>
+        <div class="step-body">
+          <div class="step-title">15 affiliate products mapped to post days <span class="step-tag tag-done">Done</span></div>
+          <div class="step-detail">Every gear review and affiliate roundup day has a matching product pre-loaded in the Affiliate Manager. Product names, programs, and commission rates are set.</div>
+        </div>
+      </div>
+
+      <div class="step active">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">Enroll in affiliate programs <span class="step-tag tag-next">Do This First</span></div>
+          <div class="step-detail">
+            Sign up for each program below. Approval typically takes 1–3 days for Amazon, instant or same-day for others.
+            See the <strong>Affiliate Programs</strong> table below for direct enrollment links.
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-title">Replace affiliate URLs in the manager <span class="step-tag tag-next">After Step 3</span></div>
+          <div class="step-detail">
+            Open <a href="affiliate-manager.html">Affiliate Manager</a> → click the pencil (✏) on each product → paste your affiliate-tagged URL.
+            See the <strong>Products Reference</strong> table below for which URL each product needs.
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <div class="step-title">Set your start date <span class="step-tag tag-next">5 minutes</span></div>
+          <div class="step-detail">
+            Open <a href="content-calendar.html">Content Calendar</a> → set the start date picker to your first post date (currently defaulted to Jun 23, 2026). Hit <strong>↓ Schedule CSV</strong> to download a dated schedule.
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">6</div>
+        <div class="step-body">
+          <div class="step-title">Source one image per day <span class="step-tag tag-later">Ongoing</span></div>
+          <div class="step-detail">
+            In the calendar, click any day → the panel shows a photography brief + direct <strong>Unsplash</strong>, <strong>Pexels</strong>, and <strong>Shutterstock</strong> search links. Click, pick a photo, save it. No face should appear in any image — the page is faceless.
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">7</div>
+        <div class="step-body">
+          <div class="step-title">Schedule all 30 posts in Meta Business Suite <span class="step-tag tag-later">1–2 hours</span></div>
+          <div class="step-detail">
+            Open <a href="https://business.facebook.com/" target="_blank" rel="noopener">Meta Business Suite</a> → Posts → Create Post → Schedule.
+            The <strong>Full Post (Paste-Ready)</strong> column in the CSV is assembled and ready to paste directly. Do all 30 in one session.
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">8</div>
+        <div class="step-body">
+          <div class="step-title">Pin affiliate link comments on schedule <span class="step-tag tag-later">9 times over 30 days</span></div>
+          <div class="step-detail">
+            On each of the 9 affiliate slot days, post the affiliate link as the first comment and pin it.
+            Days: 1, 5, 8, 12, 15, 19, 22, 26, 29. The Affiliate Manager tracks your links and copy counts.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Affiliate Programs -->
+  <section>
+    <div class="section-title">Affiliate Programs — Enroll Now</div>
+    <div class="sched-scroll">
+      <table class="aff-table">
+        <thead>
+          <tr>
+            <th>Program</th>
+            <th>Commission</th>
+            <th>Products in Plan</th>
+            <th>Approval Time</th>
+            <th>Enroll</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Amazon Associates</strong><br><span style="font-size:11px;color:var(--muted)">amazon.com/associates</span></td>
+            <td><span class="comm-badge comm-base">3–4%</span><br><span style="font-size:11px;color:var(--muted)">Outdoor/sporting goods</span></td>
+            <td><span class="products-count">10 products</span></td>
+            <td style="color:var(--muted);font-size:12px">24–48 hrs (auto-approval)</td>
+            <td><a href="https://affiliate-program.amazon.com/" target="_blank" rel="noopener" class="enroll-btn">Sign Up →</a></td>
+          </tr>
+          <tr>
+            <td><strong>OnX Maps</strong><br><span style="font-size:11px;color:var(--muted)">onxmaps.com affiliate</span></td>
+            <td><span class="comm-badge comm-high">20%</span><br><span style="font-size:11px;color:var(--muted)">Highest in the plan</span></td>
+            <td><span class="products-count">1 product</span></td>
+            <td style="color:var(--muted);font-size:12px">2–5 business days</td>
+            <td><a href="https://www.onxmaps.com/hunt/affiliate" target="_blank" rel="noopener" class="enroll-btn">Sign Up →</a></td>
+          </tr>
+          <tr>
+            <td><strong>MidwayUSA</strong><br><span style="font-size:11px;color:var(--muted)">Via ShareASale network</span></td>
+            <td><span class="comm-badge comm-mid">6–8%</span><br><span style="font-size:11px;color:var(--muted)">Knives, scopes, ammo</span></td>
+            <td><span class="products-count">2 products</span></td>
+            <td style="color:var(--muted);font-size:12px">3–7 business days</td>
+            <td><a href="https://www.shareasale.com/shareasale.cfm?merchantID=9829" target="_blank" rel="noopener" class="enroll-btn">Sign Up →</a></td>
+          </tr>
+          <tr>
+            <td><strong>Bass Pro Shops</strong><br><span style="font-size:11px;color:var(--muted)">Via Impact network</span></td>
+            <td><span class="comm-badge comm-base">5%</span><br><span style="font-size:11px;color:var(--muted)">Fishing, hunting gear</span></td>
+            <td><span class="products-count">1 product</span></td>
+            <td style="color:var(--muted);font-size:12px">3–7 business days</td>
+            <td><a href="https://app.impact.com/campaign-promo-signup/Bass-Pro-Shops.brand" target="_blank" rel="noopener" class="enroll-btn">Sign Up →</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="action-note">
+      <strong>Pro tip:</strong> Apply to all four programs on the same day. While waiting for approval, finish steps 5 and 6 so you're ready to swap URLs the moment access is granted. Amazon Associates approves first — start there.
+    </div>
+  </section>
+
+  <!-- Products Reference -->
+  <section>
+    <div class="section-title">Products Reference — What URL to Replace</div>
+    <div class="prod-grid" id="prodGrid"></div>
+    <div class="action-note" style="margin-top:10px">
+      <strong>How to get your affiliate URL:</strong> Once enrolled, find the product on the retailer's site → use their affiliate link builder or SiteStripe (Amazon) → copy the tagged URL → open <a href="affiliate-manager.html" style="color:var(--blue)">Affiliate Manager</a> → click ✏ on the product → paste the URL → Save.
+    </div>
+  </section>
+
+  <!-- 30-Day Schedule -->
+  <section>
+    <div class="section-title">30-Day Post Schedule — Jun 23 to Jul 22, 2026</div>
+    <div class="sched-wrap">
+      <div class="sched-scroll">
+        <table class="sched-table">
+          <thead>
+            <tr>
+              <th>Day</th>
+              <th>Date</th>
+              <th>Day</th>
+              <th>Time</th>
+              <th>Content Type</th>
+              <th>Aff</th>
+              <th>Hook (preview)</th>
+            </tr>
+          </thead>
+          <tbody id="schedBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+const AFFILIATE_DAYS = new Set([1,5,8,12,15,19,22,26,29]);
+const START_DATE = new Date(2026, 5, 23); // June 23, 2026
+
+const TYPE_COLORS = {
+  nostalgia:         '#8957e5',
+  gear_review:       '#d29922',
+  question_poll:     '#388bfd',
+  scenic_caption:    '#3fb950',
+  affiliate_roundup: '#f0883e',
+  video_script:      '#f85149',
+};
+
+const TYPE_LABELS = {
+  nostalgia:         'Nostalgia',
+  gear_review:       'Gear Review',
+  question_poll:     'Question / Poll',
+  scenic_caption:    'Scenic Caption',
+  affiliate_roundup: 'Affiliate Roundup',
+  video_script:      'Video Script',
+};
+
+const PROG_COLORS = { Amazon:'#ff9900', 'Bass Pro':'#3fb950', OnX:'#f0883e', MidwayUSA:'#f85149' };
+
+const PRODUCTS = [
+  { day:2,  aff:false, name:"Irish Setter Elk Tracker Hunting Boot",          program:"Amazon",    comm:"4%",  note:"Day 2 gear review" },
+  { day:5,  aff:true,  name:"Black Diamond Spot 400 Headlamp",                program:"Amazon",    comm:"4%",  note:"Day 5 affiliate roundup (⭐ slot)" },
+  { day:5,  aff:true,  name:"HeatMax Disposable Hand Warmers 40-pack",        program:"Amazon",    comm:"4%",  note:"Day 5 affiliate roundup (⭐ slot)" },
+  { day:5,  aff:true,  name:"Minus33 Merino Wool Midweight Base Layer",       program:"Amazon",    comm:"4%",  note:"Day 5 affiliate roundup (⭐ slot)" },
+  { day:8,  aff:true,  name:"Vortex Crossfire II 4-12x44 Riflescope",         program:"Amazon",    comm:"4%",  note:"Day 8 gear review (⭐ slot)" },
+  { day:8,  aff:true,  name:"Leupold VX-Freedom 3-9x40 Riflescope",          program:"MidwayUSA", comm:"6%",  note:"Day 8 alternate scope option" },
+  { day:11, aff:false, name:"Shimano Sienna FE 2500 Spinning Reel",           program:"Amazon",    comm:"4%",  note:"Day 11 affiliate roundup" },
+  { day:11, aff:false, name:"PowerPro Spectra Braided Fishing Line 10lb",     program:"Amazon",    comm:"4%",  note:"Day 11 affiliate roundup" },
+  { day:11, aff:false, name:"Frabill Conservation Catch & Release Net",       program:"Bass Pro",  comm:"5%",  note:"Day 11 affiliate roundup" },
+  { day:15, aff:true,  name:"Benchmade Saddle Mountain Skinner Fixed Blade",  program:"MidwayUSA", comm:"6%",  note:"Day 15 gear review (⭐ slot)" },
+  { day:18, aff:false, name:"Adventure Medical Kits Sportsman 300",           program:"Amazon",    comm:"4%",  note:"Day 18 affiliate roundup" },
+  { day:18, aff:false, name:"UCO Stormproof Match Kit with Case",             program:"Amazon",    comm:"4%",  note:"Day 18 affiliate roundup" },
+  { day:23, aff:false, name:"Vortex Ranger 1800 Laser Rangefinder",           program:"Amazon",    comm:"4%",  note:"Day 23 gear review" },
+  { day:28, aff:false, name:"OnX Hunt — Elite Membership Annual",             program:"OnX",       comm:"20%", note:"Day 28 affiliate roundup — highest commission" },
+  { day:29, aff:true,  name:"St. Croix Triumph Spinning Rod 6'6\" Medium",   program:"Amazon",    comm:"4%",  note:"Day 29 gear review (⭐ slot)" },
+];
+
+const SCHEDULE = [
+  { day:1,  type:'nostalgia',         time:'7:00 AM',  hook:"There's something about the smell of gun oil and fresh coffee at 4am that can't be explained to someone who's never felt it." },
+  { day:2,  type:'gear_review',       time:'8:00 PM',  hook:"I've worn a lot of hunting boots over 40 years. These are the ones I'd buy again without thinking twice." },
+  { day:3,  type:'question_poll',     time:'12:00 PM', hook:"Here's a question that'll sort out a room of hunters fast: rifle, bow, or muzzleloader?" },
+  { day:4,  type:'scenic_caption',    time:'6:30 AM',  hook:"Sunrise over still water. There's no better alarm clock in the world." },
+  { day:5,  type:'affiliate_roundup', time:'7:30 PM',  hook:"Three pieces of gear that paid for themselves in the first season. Straight talk, no fluff." },
+  { day:6,  type:'video_script',      time:'9:00 PM',  hook:"This is what it sounds like at 5am in elk country. Just listen." },
+  { day:7,  type:'nostalgia',         time:'7:00 AM',  hook:"My first deer rifle was a hand-me-down with a scratched stock and a loose sling." },
+  { day:8,  type:'gear_review',       time:'8:00 PM',  hook:"This scope changed everything about my long-range shots. I'll tell you exactly why." },
+  { day:9,  type:'question_poll',     time:'12:00 PM', hook:"Public land or private land — where do you do most of your hunting?" },
+  { day:10, type:'scenic_caption',    time:'6:30 AM',  hook:"First frost of the season. The woods change overnight when this happens." },
+  { day:11, type:'affiliate_roundup', time:'7:30 PM',  hook:"Fishing gear worth spending real money on — and what you can buy cheap without losing sleep." },
+  { day:12, type:'video_script',      time:'9:00 PM',  hook:"I filmed every step of quartering my bull elk at 9,200 feet. Here's how it's actually done." },
+  { day:13, type:'nostalgia',         time:'7:00 AM',  hook:"We didn't have trail cameras. We had boot leather and patience." },
+  { day:14, type:'question_poll',     time:'12:00 PM', hook:"What time of year do you love most in the outdoors?" },
+  { day:15, type:'gear_review',       time:'8:00 PM',  hook:"A quality hunting knife is the one piece of gear most hunters underestimate until the moment they need it." },
+  { day:16, type:'scenic_caption',    time:'5:00 PM',  hook:"There's a reason we keep going back to the same river." },
+  { day:17, type:'nostalgia',         time:'7:00 AM',  hook:"Nobody said a word when we drove home without filling tags. Some trips were just about being out there." },
+  { day:18, type:'affiliate_roundup', time:'7:30 PM',  hook:"Five things every hunting camp needs that most guys forget until they're 60 miles in." },
+  { day:19, type:'video_script',      time:'9:00 PM',  hook:"Watch this whitetail walk in from 400 yards and work the scrape exactly the way the books say." },
+  { day:20, type:'question_poll',     time:'12:00 PM', hook:"Solo hunt or bring a buddy? There's no wrong answer here — but every man has a strong preference." },
+  { day:21, type:'scenic_caption',    time:'8:00 PM',  hook:"No cell service. No news. No problem." },
+  { day:22, type:'nostalgia',         time:'7:00 AM',  hook:"If your dad taught you to hunt, you got something money can't buy." },
+  { day:23, type:'gear_review',       time:'8:00 PM',  hook:"I tested this rangefinder in the Rockies last September. Here's the honest report." },
+  { day:24, type:'video_script',      time:'9:00 PM',  hook:"Fly fishing a high-altitude lake most guys never find because they stop at the trailhead." },
+  { day:25, type:'question_poll',     time:'12:00 PM', hook:"Lake fishing or river fishing — where do you feel most at home?" },
+  { day:26, type:'scenic_caption',    time:'6:30 AM',  hook:"The mountains don't care how old you are. They just ask if you'll show up." },
+  { day:27, type:'nostalgia',         time:'7:00 AM',  hook:"My first trout came out of a creek you could jump across. Best fish I ever caught." },
+  { day:28, type:'affiliate_roundup', time:'7:30 PM',  hook:"The best hunting apps for men who don't want to spend all day staring at a screen." },
+  { day:29, type:'gear_review',       time:'8:00 PM',  hook:"This rod handled a 28-inch walleye without a complaint." },
+  { day:30, type:'video_script',      time:'9:00 PM',  hook:"I sat in this treestand for 11 hours waiting on one specific buck." },
+];
+
+const DOWS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function postDate(day) {
+  const d = new Date(START_DATE);
+  d.setDate(d.getDate() + day - 1);
+  return d;
+}
+
+function fmtDate(d) {
+  return d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+}
+
+// Render products reference
+document.getElementById('prodGrid').innerHTML = PRODUCTS.map(p => `
+  <div class="prod-card">
+    <div class="prod-day${p.aff ? ' aff' : ''}">Day ${p.day}${p.aff ? ' ⭐' : ''}</div>
+    <div class="prod-info">
+      <div class="prod-name">${p.name}</div>
+      <div class="prod-meta">
+        <span><span class="prog-dot" style="background:${PROG_COLORS[p.program] || '#8b949e'}"></span>${p.program}</span>
+        <span style="color:var(--gold);font-weight:700">${p.comm}</span>
+        <span>${p.note}</span>
+      </div>
+    </div>
+  </div>
+`).join('');
+
+// Render schedule
+document.getElementById('schedBody').innerHTML = SCHEDULE.map(row => {
+  const d = postDate(row.day);
+  const isAff = AFFILIATE_DAYS.has(row.day);
+  const color = TYPE_COLORS[row.type];
+  const hook = row.hook.length > 65 ? row.hook.slice(0, 62) + '…' : row.hook;
+  return `
+    <tr>
+      <td style="font-weight:700;color:var(--muted);font-size:13px">${row.day}</td>
+      <td style="white-space:nowrap">${fmtDate(d)}</td>
+      <td style="color:var(--muted)">${DOWS[d.getDay()]}</td>
+      <td style="color:var(--muted);white-space:nowrap">${row.time}</td>
+      <td><span class="type-dot" style="background:${color}"></span>${TYPE_LABELS[row.type]}</td>
+      <td>${isAff ? '<span class="aff-flag">⭐ Yes</span>' : ''}</td>
+      <td style="color:var(--muted);font-style:italic">${hook}</td>
+    </tr>`;
+}).join('');
+</script>
+</body>
+</html>
