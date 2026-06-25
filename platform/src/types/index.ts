@@ -10,6 +10,7 @@ export interface Profile {
   stripe_account_id?: string
   stripe_customer_id?: string
   payout_enabled: boolean
+  payout_pending_cents: number
   revenue_share_percent: number // platform keeps (100 - this)%
   created_at: string
 }
