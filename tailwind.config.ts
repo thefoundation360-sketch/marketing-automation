@@ -9,11 +9,18 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Foundation Mecca brand palette
+        // Foundation Mecca brand palette — black & gold, dark themed
         mecca: {
-          gold: "#C9A227",
-          ink: "#0E0E10",
-          slate: "#1C1C22",
+          gold: "#D4AF37",
+          goldsoft: "#C9A227",
+          goldmuted: "#8C7A2B",
+          black: "#0A0A0C",
+          ink: "#0E0E12",
+          panel: "#141419",
+          card: "#1A1A21",
+          cardhover: "#21212A",
+          border: "#2A2A34",
+          muted: "#8B8B99",
           mist: "#F5F4F0",
         },
       },

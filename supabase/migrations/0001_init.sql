@@ -18,7 +18,16 @@ exception when duplicate_object then null; end $$;
 
 do $$ begin
   create type pipeline_stage as enum (
-    'new', 'contacted', 'qualified', 'nurturing', 'booked', 'won', 'lost'
+    'new_lead',
+    'contacted',
+    'qualified',
+    'call_booked',
+    'call_complete',
+    'proposal_sent',
+    'client_won',
+    'active',
+    'complete',
+    'upsell'
   );
 exception when duplicate_object then null; end $$;
 
@@ -71,8 +80,10 @@ create table if not exists leads (
   phone            text,
   instagram_handle text,
   interest_tag     interest_tag,
-  pipeline_stage   pipeline_stage not null default 'new',
+  pipeline_stage   pipeline_stage not null default 'new_lead',
   notes            text,
+  stage_changed_at timestamptz not null default now(),
+  last_contact_at  timestamptz,
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now()
 );

@@ -7,13 +7,16 @@
 export type InterestTag = "beat_pack" | "studio" | "roadmap";
 
 export type PipelineStage =
-  | "new"
+  | "new_lead"
   | "contacted"
   | "qualified"
-  | "nurturing"
-  | "booked"
-  | "won"
-  | "lost";
+  | "call_booked"
+  | "call_complete"
+  | "proposal_sent"
+  | "client_won"
+  | "active"
+  | "complete"
+  | "upsell";
 
 export type ProgramEnrolled =
   | "chapter_1"
@@ -46,6 +49,8 @@ export interface Lead {
   interest_tag: InterestTag | null;
   pipeline_stage: PipelineStage;
   notes: string | null;
+  stage_changed_at: string;
+  last_contact_at: string | null;
   created_at: string;
   updated_at: string;
 }
