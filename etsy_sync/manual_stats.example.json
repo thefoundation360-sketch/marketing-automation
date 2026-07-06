@@ -1,0 +1,6 @@
+{
+  "_comment": "Etsy's public API does not expose per-listing views/clicks (that only lives in Shop Manager > Stats). If you want that data included in the synced output, copy this file to manual_stats.json and fill it in by hand each week from Shop Manager. The sync script merges whatever it finds here for the matching week_start; anything not listed stays null. This step is entirely optional.",
+  "week_of_2026-06-29": {
+    "1234567890": { "views": 340, "clicks": 28 }
+  }
+}
