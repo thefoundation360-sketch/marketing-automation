@@ -91,13 +91,39 @@ Output:
 - `data/latest.json` — most recent snapshot, one row per listing
 - `data/snapshot_<week-start>.json` — dated snapshot per week, for history
 
+## Turning the data into a "where to focus" report
+
+Once you've run `sync.py` at least once, generate a money report from the
+synced data (no Etsy API calls, just analysis over what's already stored):
+
+```bash
+python report.py                    # most recently synced week
+python report.py --trend-weeks 8    # widen the week-over-week trend table
+```
+
+This produces `data/report_<week-start>.md` (and a matching `.json`) with:
+- **Revenue by niche** — which of Funny Occupation / Grief & Memorial / Pet
+  Memorial / Mental Health / etc. is actually making money, ranked
+- **Top 10 listings by revenue** — your proven winners
+- **Active listings with the least revenue** — candidates to reprice,
+  relist with better photos/tags, or retire
+- **Pricing opportunities** — simple, explainable flags:
+  - `underpriced`: high sales this week at a below-average price (room to test a price increase)
+  - `stagnant_premium`: zero sales this week at an above-average price (may be overpriced or just not getting seen)
+- **Revenue trend by niche** over the last N weeks, so you can see what's
+  growing vs. fading before committing more inventory/ad spend to it
+
+The more weeks you have synced, the more useful the trend section gets —
+run `sync.py --weeks-back N` a few times first to backfill history if you
+want trends immediately instead of waiting for real time to pass.
+
 ## Scheduling it weekly
 
 Run `crontab -e` and add (adjust the path and Python interpreter):
 
 ```cron
-# Every Monday at 6am, sync last week's Etsy data
-0 6 * * 1 cd /path/to/marketing-automation/etsy_sync && .venv/bin/python sync.py >> sync.log 2>&1
+# Every Monday at 6am, sync last week's Etsy data and regenerate the report
+0 6 * * 1 cd /path/to/marketing-automation/etsy_sync && .venv/bin/python sync.py >> sync.log 2>&1 && .venv/bin/python report.py >> sync.log 2>&1
 ```
 
 ## Error handling built in
@@ -123,3 +149,4 @@ Run `crontab -e` and add (adjust the path and Python interpreter):
 | `etsy_client.py` | API wrapper: auth, retries, pagination | Yes |
 | `auth.py` | One-time OAuth PKCE setup | Yes |
 | `sync.py` | Weekly sync entrypoint | Yes |
+| `report.py` | Turns synced data into a niche/listing revenue report with pricing flags and trends | Yes |
