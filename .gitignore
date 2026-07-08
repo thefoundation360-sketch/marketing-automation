@@ -1,5 +1,6 @@
 etsy_sync/config.json
 etsy_sync/tokens.json
+etsy_sync/.auth_state.json
 etsy_sync/niche_mapping.json
 etsy_sync/manual_stats.json
 etsy_sync/data/
