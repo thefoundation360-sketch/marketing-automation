@@ -1,0 +1,8 @@
+{
+  "_comment": "Copy this file to config.json and fill in your real values. Never commit config.json.",
+  "keystring": "YOUR_ETSY_API_KEYSTRING",
+  "shared_secret": "YOUR_ETSY_SHARED_SECRET",
+  "redirect_uri": "http://localhost:3003/oauth/callback",
+  "scopes": ["listings_r", "transactions_r", "shops_r"],
+  "shop_id": null
+}

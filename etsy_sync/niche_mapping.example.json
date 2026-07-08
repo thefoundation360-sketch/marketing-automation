@@ -1,0 +1,7 @@
+{
+  "_comment": "Map Etsy listing_id (as string) to your business niche. Any listing not listed here falls back to 'Uncategorized'. Copy this file to niche_mapping.json and edit it with your real listing IDs.",
+  "1234567890": "Funny Occupation",
+  "1234567891": "Grief & Memorial",
+  "1234567892": "Pet Memorial",
+  "1234567893": "Mental Health"
+}
