@@ -67,6 +67,7 @@ jobs:
       # Remembers which alerts were already sent, so you don't get duplicates.
       - name: Test alert
         if: github.event_name == 'workflow_dispatch' && inputs.test_alert
+        continue-on-error: true   # a failed test shouldn't stop the real scan
         run: python scanner.py --test-alert
 
       - name: Restore alert history
