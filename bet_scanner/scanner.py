@@ -25,6 +25,7 @@ import requests
 
 import airtable_log
 import alerts
+import espn_odds
 import odds_api
 import polymarket
 from odds_math import fair_probs_from_books, stake_dollars
@@ -62,12 +63,13 @@ def config_from_env():
     """Build config from environment variables (used by the GitHub Actions schedule).
 
     Starts from config.example.json defaults; only variables that are set override them.
-    Returns None if ODDS_API_KEY isn't set.
+    Returns None unless running in GitHub Actions or at least one variable is set.
     """
     import os
-    if not os.environ.get("ODDS_API_KEY"):
+    if os.environ.get("GITHUB_ACTIONS") != "true" and not any(os.environ.get(k) for k in ENV_KEYS):
         return None
     cfg = json.loads((HERE / "config.example.json").read_text())
+    cfg["odds_api_key"] = ""
     cfg.setdefault("airtable", {})
     for env, path in ENV_KEYS.items():
         value = os.environ.get(env, "").strip()
@@ -87,12 +89,24 @@ def load_config(require_odds_key=True):
     if not CONFIG_PATH.exists():
         sys.exit(
             f"Missing {CONFIG_PATH.name}. Run `python setup.py` (or copy config.example.json to "
-            "config.json) and add your free Odds API key (see README.md)."
+            "config.json) (see README.md)."
         )
-    cfg = json.loads(CONFIG_PATH.read_text())
-    if require_odds_key and (not cfg.get("odds_api_key") or "PASTE" in cfg["odds_api_key"]):
-        sys.exit("Add your Odds API key to config.json (free at https://the-odds-api.com).")
-    return cfg
+    return json.loads(CONFIG_PATH.read_text())
+
+
+def has_odds_key(cfg):
+    key = cfg.get("odds_api_key") or ""
+    return bool(key) and "PASTE" not in key
+
+
+def fetch_book_games(cfg, sport):
+    """Sportsbook lines: The Odds API if a key is set (many books), else ESPN (free, one book)."""
+    hours = int(cfg.get("hours_ahead", 24))
+    if has_odds_key(cfg):
+        games, remaining = odds_api.fetch_games(cfg["odds_api_key"], sport, hours)
+        return games, f"Odds API credits left: {remaining}"
+    games, _ = espn_odds.fetch_games(sport, hours)
+    return games, "odds source: ESPN (free)"
 
 
 # ---------- team matching ----------
@@ -260,9 +274,7 @@ def scan(cfg, dry_run=False, quiet=False):
     print(f"\n=== Scan {fmt_time(datetime.now(timezone.utc), tz)} ===")
     for sport in cfg.get("sports", []):
         try:
-            games, remaining = odds_api.fetch_games(
-                cfg["odds_api_key"], sport, int(cfg.get("hours_ahead", 24))
-            )
+            games, source_note = fetch_book_games(cfg, sport)
             markets = polymarket.fetch_markets(sport)
         except (odds_api.OddsApiError, requests.RequestException) as e:
             print(f"{sport}: skipped ({e})")
@@ -273,7 +285,7 @@ def scan(cfg, dry_run=False, quiet=False):
                 price_lookup[f"{m['id']}:{i}"] = price
         opps = find_opportunities(cfg, games, markets, sport)
         print(f"{sport}: {len(games)} games, {len(markets)} Polymarket markets, "
-              f"{len(opps)} edges. Odds API credits left: {remaining}")
+              f"{len(opps)} edges. {source_note}")
         for opp in opps:
             total_found += 1
             title, body = format_alert(opp, tz)
