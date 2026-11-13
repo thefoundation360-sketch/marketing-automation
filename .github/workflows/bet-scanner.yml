@@ -1,7 +1,8 @@
 name: Bet Scanner
 
 # Runs the Polymarket-vs-sportsbook scanner on GitHub's servers. No laptop needed.
-# Alerts go to your phone (ntfy) and rows go to Airtable. It never places bets.
+# Alerts go to your phone (GitHub app when the repo is private, or ntfy) and rows go to
+# Airtable. It never places bets.
 #
 # No secrets required: odds come from ESPN's free feed.
 # Optional secrets: NTFY_TOPIC (phone alerts), AIRTABLE_TOKEN, AIRTABLE_BASE_ID, BANKROLL,
@@ -14,7 +15,12 @@ on:
     # this uses ~270 of 500 free credits/month.
     - cron: "7 17,21 * * *"
     - cron: "7 0 * * *"
-  workflow_dispatch: {}   # "Run workflow" button for a manual scan
+  workflow_dispatch:      # "Run workflow" button for a manual scan
+    inputs:
+      test_alert:
+        description: "Send a test alert to my phone"
+        type: boolean
+        default: false
 
 concurrency:
   group: bet-scanner
@@ -22,12 +28,16 @@ concurrency:
 
 permissions:
   contents: read
+  issues: write   # alerts become GitHub issues assigned to you (private repo only)
 
 jobs:
   scan:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
+      # Alerts as GitHub notifications. Only posts when the repo is PRIVATE.
+      ALERT_GITHUB_ISSUES: "true"
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
       NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
       AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
@@ -55,6 +65,10 @@ jobs:
         run: python diagnose.py
 
       # Remembers which alerts were already sent, so you don't get duplicates.
+      - name: Test alert
+        if: github.event_name == 'workflow_dispatch' && inputs.test_alert
+        run: python scanner.py --test-alert
+
       - name: Restore alert history
         uses: actions/cache/restore@v4
         with:

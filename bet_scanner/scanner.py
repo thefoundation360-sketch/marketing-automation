@@ -326,10 +326,18 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--dry-run", action="store_true", help="print only; no alerts, no saved state")
     parser.add_argument("--every", type=int, metavar="MINUTES", help="repeat the scan every N minutes")
+    parser.add_argument("--test-alert", action="store_true",
+                        help="send one sample alert through every configured channel, then exit")
     parser.add_argument("--quiet", action="store_true",
                         help="don't print pick details (for public logs, e.g. GitHub Actions)")
     args = parser.parse_args()
     cfg = load_config()
+    if args.test_alert:
+        sent = alerts.send_all(cfg.get("alerts"), "✅ TEST: Bet Scanner alerts work",
+                               "This is a test. Real alerts look like this, with the team, the max "
+                               "price to pay, and the stake.\nNo action needed.", {"test": True})
+        print(f"Test alert sent via: {', '.join(sent) or 'NOTHING (no alert channel configured)'}")
+        sys.exit(0 if sent else 1)
     if not args.every:
         scan(cfg, args.dry_run, args.quiet)
         return

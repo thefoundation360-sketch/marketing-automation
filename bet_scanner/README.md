@@ -25,6 +25,18 @@ First: check injuries. Star out or questionable = SKIP.
 5. It logs every alert to `data/opportunities.csv` and won't re-alert the same bet unless
    the price drops another 2 points.
 
+## Alerts in the GitHub app (recommended)
+
+When the scanner runs on GitHub and the repo is **private**, every alert becomes a GitHub issue
+assigned to you, and the GitHub app pushes it to your phone. No keys or extra apps.
+1. Repo **Settings → General → Danger Zone → Change repository visibility → Private**.
+2. In the GitHub app: **Profile → Settings → Notifications** → make sure push for
+   **Assigned** (or Participating) is on.
+3. Test it: **Actions → Bet Scanner → Run workflow**, tick **Send a test alert**.
+
+While the repo is public, the scanner refuses to post alerts, so picks are never public.
+Private repos get 2,000 free Actions minutes a month; this uses about 100.
+
 ## Easiest: run it on GitHub (no laptop needed)
 
 GitHub runs the scanner for you at about **11am, 3pm and 6pm Central** every day, for free
