@@ -15,14 +15,27 @@ First: check injuries. Star out or questionable = SKIP.
 ```
 
 ## How it works
-1. Pulls moneylines from US sportsbooks (The Odds API) and removes the books' cut to get a
-   **fair win %** (the median across books, or sharp books like Pinnacle/LowVig when listed).
+1. Pulls sportsbook moneylines and removes the books' cut to get a **fair win %**. By default it
+   uses **ESPN's free feed** (no key, one book, usually DraftKings). With an optional free key from
+   The Odds API it uses the median of many books, or sharp books like Pinnacle/LowVig when listed.
 2. Pulls Polymarket's buy price for the same game (public data, no login).
 3. If fair % minus (Polymarket price + 1% cushion for fees/slippage) is **4 points or more**,
    it alerts you. It skips heavy favorites over 75% and long shots under 10%.
 4. Stake = quarter Kelly, capped at **3% of bankroll and $5**, rounded down to $0.50.
 5. It logs every alert to `data/opportunities.csv` and won't re-alert the same bet unless
    the price drops another 2 points.
+
+## Alerts in the GitHub app (recommended)
+
+When the scanner runs on GitHub and the repo is **private**, every alert becomes a GitHub issue
+assigned to you, and the GitHub app pushes it to your phone. No keys or extra apps.
+1. Repo **Settings → General → Danger Zone → Change repository visibility → Private**.
+2. In the GitHub app: **Profile → Settings → Notifications** → make sure push for
+   **Assigned** (or Participating) is on.
+3. Test it: **Actions → Bet Scanner → Run workflow**, tick **Send a test alert**.
+
+While the repo is public, the scanner refuses to post alerts, so picks are never public.
+Private repos get 2,000 free Actions minutes a month; this uses about 100.
 
 ## Easiest: run it on GitHub (no laptop needed)
 
@@ -32,8 +45,7 @@ rows go to Airtable.
 
 **One-time steps:**
 1. **Merge** this branch into `main`. GitHub only runs schedules from the main branch.
-2. Get your keys:
-   - Free Odds API key: https://the-odds-api.com
+2. Get your keys (none are required. Without any, it scans and logs nothing):
    - Phone alerts: install the free **ntfy** app → tap **+** → subscribe to a random name
      you make up, like `bets-7k2q9x4m`. Anyone who knows the name can read it, so make it random.
    - Airtable (optional): an empty base called **Betting** plus a token (steps under
@@ -42,7 +54,7 @@ rows go to Airtable.
 
    | Secret name | Value |
    |---|---|
-   | `ODDS_API_KEY` | your Odds API key (**required**) |
+   | `ODDS_API_KEY` | optional: Odds API key for sharper odds (ESPN's free odds are used without it) |
    | `NTFY_TOPIC` | your ntfy topic name |
    | `BANKROLL` | your balance, e.g. `105` |
    | `AIRTABLE_TOKEN` | Airtable token (starts with `pat`) |

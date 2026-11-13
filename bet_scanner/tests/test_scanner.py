@@ -200,3 +200,52 @@ class EnvConfigTests(unittest.TestCase):
         from unittest import mock
         with mock.patch.dict(os.environ, {"ODDS_API_KEY": ""}, clear=False):
             self.assertIsNone(scanner.config_from_env())
+
+
+class GithubAlertTests(unittest.TestCase):
+    class Resp:
+        def __init__(self, data):
+            self._d = data
+
+        def json(self):
+            return self._d
+
+        def raise_for_status(self):
+            pass
+
+    class Session:
+        def __init__(self, private):
+            self.private, self.posted = private, []
+
+        def get(self, url, **kw):
+            return GithubAlertTests.Resp({"private": self.private})
+
+        def post(self, url, **kw):
+            self.posted.append((url, kw["json"]))
+            return GithubAlertTests.Resp({})
+
+    ENV = {"ALERT_GITHUB_ISSUES": "true", "GITHUB_TOKEN": "t",
+           "GITHUB_REPOSITORY": "me/repo", "GITHUB_REPOSITORY_OWNER": "me"}
+
+    def setUp(self):
+        import alerts
+        alerts._repo_private_cache.clear()
+
+    def test_private_repo_creates_assigned_issue(self):
+        import alerts
+        s = self.Session(private=True)
+        self.assertTrue(alerts.github_issue_alert("BET: X", "line1\nline2", env=self.ENV, session=s))
+        url, payload = s.posted[0]
+        self.assertTrue(url.endswith("/repos/me/repo/issues"))
+        self.assertEqual(payload["assignees"], ["me"])
+        self.assertIn("bet-alert", payload["labels"])
+
+    def test_public_repo_never_posts(self):
+        import alerts
+        s = self.Session(private=False)
+        self.assertFalse(alerts.github_issue_alert("BET: X", "body", env=self.ENV, session=s))
+        self.assertEqual(s.posted, [])
+
+    def test_disabled_outside_actions(self):
+        import alerts
+        self.assertFalse(alerts.github_issue_alert("t", "b", env={}, session=self.Session(True)))

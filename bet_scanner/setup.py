@@ -33,16 +33,12 @@ def main():
     cfg = json.loads((CONFIG if CONFIG.exists() else EXAMPLE).read_text())
     print("Bet Scanner setup. This takes about 10 minutes and you only do it once.")
 
-    # 1. Odds API
-    step(1, "Free sportsbook odds key")
+    # 1. Odds API (optional)
+    step(1, "Sportsbook odds")
+    print("By default the scanner uses ESPN's free odds (no signup).")
+    print("Optional: a free key from the-odds-api.com averages many sportsbooks for sharper fair odds.")
     key = cfg.get("odds_api_key", "")
-    if not key or "PASTE" in key:
-        print("Opening the-odds-api.com. Sign up for the FREE plan, then copy the key from your email.")
-        webbrowser.open("https://the-odds-api.com/#get-access")
-        key = ""
-    key = ask("Paste your Odds API key", key)
-    if not key:
-        sys.exit("An Odds API key is required. Run `python setup.py` again when you have it.")
+    key = ask("Paste an Odds API key, or press Enter to use free ESPN odds", "" if "PASTE" in key else key)
     cfg["odds_api_key"] = key
 
     # 2. Bankroll

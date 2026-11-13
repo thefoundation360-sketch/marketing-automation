@@ -5,6 +5,7 @@
 
 - Polymarket: no key needed. Shows how many game markets it parsed per sport, plus the raw
   shape of one market so parsing problems are easy to fix.
+- ESPN: free sportsbook moneylines, no key. Shows games and how many matched Polymarket.
 - Odds API: runs only if ODDS_API_KEY (env) or config.json has a key. Shows games and how many
   matched a Polymarket market.
 """
@@ -18,6 +19,7 @@ import requests
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+import espn_odds  # noqa: E402
 import odds_api  # noqa: E402
 import polymarket  # noqa: E402
 import scanner  # noqa: E402
@@ -73,10 +75,25 @@ def main():
             ok = False
             print(f"{sport}: FAILED ({e})")
 
-    print("\n=== The Odds API ===")
+    print("\n=== ESPN odds (free, no key) ===")
+    for sport in SPORTS:
+        try:
+            games, _ = espn_odds.fetch_games(sport, 48)
+        except requests.RequestException as e:
+            ok = False
+            print(f"{sport}: FAILED ({e})")
+            continue
+        matched = sum(1 for g in games if scanner.match_market(g, poly.get(sport, []))[0])
+        print(f"{sport}: {len(games)} upcoming games with moneylines in next 48h, "
+              f"{matched} matched to Polymarket")
+        for g in games[:2]:
+            book, lines = next(iter(g["book_lines"].items()))
+            print(f"  e.g. {g['away_team']} @ {g['home_team']}: {lines} ({book})")
+
+    print("\n=== The Odds API (optional) ===")
     key = odds_key()
     if not key:
-        print("No ODDS_API_KEY yet. Skipping (add it as a GitHub secret or in config.json).")
+        print("No ODDS_API_KEY. Fine: the scanner uses ESPN's free odds instead.")
     else:
         for sport in SPORTS:
             try:

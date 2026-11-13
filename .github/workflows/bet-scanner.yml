@@ -1,18 +1,26 @@
 name: Bet Scanner
 
 # Runs the Polymarket-vs-sportsbook scanner on GitHub's servers. No laptop needed.
-# Alerts go to your phone (ntfy) and rows go to Airtable. It never places bets.
+# Alerts go to your phone (GitHub app when the repo is private, or ntfy) and rows go to
+# Airtable. It never places bets.
 #
-# Required secret: ODDS_API_KEY
-# Optional secrets: NTFY_TOPIC, AIRTABLE_TOKEN, AIRTABLE_BASE_ID, BANKROLL, MAKE_WEBHOOK_URL
+# No secrets required: odds come from ESPN's free feed.
+# Optional secrets: NTFY_TOPIC (phone alerts), AIRTABLE_TOKEN, AIRTABLE_BASE_ID, BANKROLL,
+#   MAKE_WEBHOOK_URL, ODDS_API_KEY (more books, more accurate fair odds)
 # (Settings -> Secrets and variables -> Actions -> New repository secret)
 
 on:
   schedule:
-    # 11:07am, 3:07pm, 6:07pm Central (standard time). 3 scans x 3 sports = ~270 of 500 free credits/month.
+    # 11:07am, 3:07pm, 6:07pm Central (standard time). ESPN odds are free; with an Odds API key
+    # this uses ~270 of 500 free credits/month.
     - cron: "7 17,21 * * *"
     - cron: "7 0 * * *"
-  workflow_dispatch: {}   # "Run workflow" button for a manual scan
+  workflow_dispatch:      # "Run workflow" button for a manual scan
+    inputs:
+      test_alert:
+        description: "Send a test alert to my phone"
+        type: boolean
+        default: false
 
 concurrency:
   group: bet-scanner
@@ -20,12 +28,16 @@ concurrency:
 
 permissions:
   contents: read
+  issues: write   # alerts become GitHub issues assigned to you (private repo only)
 
 jobs:
   scan:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
+      # Alerts as GitHub notifications. Only posts when the repo is PRIVATE.
+      ALERT_GITHUB_ISSUES: "true"
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
       NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
       AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
@@ -36,17 +48,6 @@ jobs:
       run:
         working-directory: bet_scanner
     steps:
-      - name: Check setup
-        id: check
-        working-directory: .
-        run: |
-          if [ -z "$ODDS_API_KEY" ]; then
-            echo "ODDS_API_KEY secret not set yet. Add it under Settings -> Secrets and variables -> Actions."
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          fi
-
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
@@ -56,16 +57,20 @@ jobs:
       - name: Install
         run: pip install -q -r requirements.txt
 
-      # Health check: confirms Polymarket (and the Odds API, once the key is set) return data.
-      # Runs on manual "Run workflow" clicks and before setup is finished. Never prints picks.
+      # Health check: confirms Polymarket and ESPN (and the Odds API, if set) return data.
+      # Runs on manual "Run workflow" clicks. Never prints picks.
       - name: Health check
-        if: github.event_name == 'workflow_dispatch' || steps.check.outputs.ready != 'true'
-        continue-on-error: ${{ steps.check.outputs.ready == 'true' }}
+        if: github.event_name == 'workflow_dispatch'
+        continue-on-error: true
         run: python diagnose.py
 
       # Remembers which alerts were already sent, so you don't get duplicates.
+      - name: Test alert
+        if: github.event_name == 'workflow_dispatch' && inputs.test_alert
+        continue-on-error: true   # a failed test shouldn't stop the real scan
+        run: python scanner.py --test-alert
+
       - name: Restore alert history
-        if: steps.check.outputs.ready == 'true'
         uses: actions/cache/restore@v4
         with:
           path: bet_scanner/data
@@ -73,16 +78,15 @@ jobs:
           restore-keys: bet-scanner-state-
 
       - name: Create Airtable table (first run only; safe to repeat)
-        if: steps.check.outputs.ready == 'true' && env.AIRTABLE_TOKEN != '' && env.AIRTABLE_BASE_ID != ''
+        if: env.AIRTABLE_TOKEN != '' && env.AIRTABLE_BASE_ID != ''
         run: python airtable_log.py --setup
 
       - name: Scan
-        if: steps.check.outputs.ready == 'true'
         # --quiet keeps pick details out of the logs, because this repo is public.
         run: python scanner.py --quiet
 
       - name: Save alert history
-        if: always() && steps.check.outputs.ready == 'true'
+        if: always()
         uses: actions/cache/save@v4
         with:
           path: bet_scanner/data
