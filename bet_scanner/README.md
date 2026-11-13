@@ -24,7 +24,44 @@ First: check injuries. Star out or questionable = SKIP.
 5. It logs every alert to `data/opportunities.csv` and won't re-alert the same bet unless
    the price drops another 2 points.
 
-## Setup (about 10 minutes, one time)
+## Easiest: run it on GitHub (no laptop needed)
+
+GitHub runs the scanner for you at about **11am, 3pm and 6pm Central** every day, for free
+(this repo is public, and Actions are free for public repos). Alerts go to your phone and
+rows go to Airtable.
+
+**One-time steps:**
+1. **Merge** this branch into `main`. GitHub only runs schedules from the main branch.
+2. Get your keys:
+   - Free Odds API key: https://the-odds-api.com
+   - Phone alerts: install the free **ntfy** app → tap **+** → subscribe to a random name
+     you make up, like `bets-7k2q9x4m`. Anyone who knows the name can read it, so make it random.
+   - Airtable (optional): an empty base called **Betting** plus a token (steps under
+     "Airtable bet log" below).
+3. On GitHub: **Settings → Secrets and variables → Actions → New repository secret**, and add:
+
+   | Secret name | Value |
+   |---|---|
+   | `ODDS_API_KEY` | your Odds API key (**required**) |
+   | `NTFY_TOPIC` | your ntfy topic name |
+   | `BANKROLL` | your balance, e.g. `105` |
+   | `AIRTABLE_TOKEN` | Airtable token (starts with `pat`) |
+   | `AIRTABLE_BASE_ID` | Airtable base ID (starts with `app`) |
+
+4. Test it: **Actions tab → Bet Scanner → Run workflow**. It creates the Airtable table on
+   the first run, then scans.
+
+Notes:
+- Secrets stay hidden even though the repo is public. The scanner runs with `--quiet` so
+  your picks never show in the public logs; the details only go to your phone and Airtable.
+- Update `BANKROLL` the same way every Sunday.
+- GitHub pauses schedules after 60 days with no repo activity. If alerts stop, open
+  **Actions → Bet Scanner** and click **Enable workflow**.
+- To change the scan times, edit the `cron` lines in `.github/workflows/bet-scanner.yml`.
+
+## Or run it on your laptop
+
+### Setup (about 10 minutes, one time)
 
 **0. Get the code onto your laptop.** On GitHub, open this repo, switch to the
 `claude/sports-betting-analysis-picks-h7aom0` branch, then click **Code → Download ZIP** and unzip it.

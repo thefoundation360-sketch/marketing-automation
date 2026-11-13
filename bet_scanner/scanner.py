@@ -48,7 +48,42 @@ SPORT_EMOJI = {"basketball": "🏀", "americanfootball": "🏈", "icehockey": "�
 MAX_START_GAP = timedelta(hours=18)
 
 
+ENV_KEYS = {
+    "ODDS_API_KEY": ("odds_api_key",),
+    "BANKROLL": ("bankroll",),
+    "NTFY_TOPIC": ("alerts", "ntfy_topic"),
+    "MAKE_WEBHOOK_URL": ("alerts", "make_webhook_url"),
+    "AIRTABLE_TOKEN": ("airtable", "token"),
+    "AIRTABLE_BASE_ID": ("airtable", "base_id"),
+}
+
+
+def config_from_env():
+    """Build config from environment variables (used by the GitHub Actions schedule).
+
+    Starts from config.example.json defaults; only variables that are set override them.
+    Returns None if ODDS_API_KEY isn't set.
+    """
+    import os
+    if not os.environ.get("ODDS_API_KEY"):
+        return None
+    cfg = json.loads((HERE / "config.example.json").read_text())
+    cfg.setdefault("airtable", {})
+    for env, path in ENV_KEYS.items():
+        value = os.environ.get(env, "").strip()
+        if not value:
+            continue
+        target = cfg
+        for part in path[:-1]:
+            target = target.setdefault(part, {})
+        target[path[-1]] = float(value) if env == "BANKROLL" else value
+    return cfg
+
+
 def load_config(require_odds_key=True):
+    env_cfg = None if CONFIG_PATH.exists() else config_from_env()
+    if env_cfg:
+        return env_cfg
     if not CONFIG_PATH.exists():
         sys.exit(
             f"Missing {CONFIG_PATH.name}. Run `python setup.py` (or copy config.example.json to "
@@ -211,7 +246,7 @@ def append_log(opp, tz):
         })
 
 
-def scan(cfg, dry_run=False):
+def scan(cfg, dry_run=False, quiet=False):
     tz = ZoneInfo(cfg.get("timezone", "America/Chicago"))
     state = load_state()
     total_found = 0
@@ -242,7 +277,8 @@ def scan(cfg, dry_run=False):
         for opp in opps:
             total_found += 1
             title, body = format_alert(opp, tz)
-            print(f"\n{title}\n{body}")
+            if not quiet:
+                print(f"\n{title}\n{body}")
             if dry_run:
                 continue
             if should_alert(opp, state, float(cfg.get("realert_improvement", 0.02))):
@@ -260,9 +296,9 @@ def scan(cfg, dry_run=False):
                         print(f"  ! Airtable row failed: {e}")
                 state[opp["key"]] = {"price": opp["poly_price"],
                                      "at": datetime.now(timezone.utc).isoformat()}
-                print(f"  -> alerted via: {', '.join(sent) or 'nothing configured (printed only)'}")
+                print(f"  -> alert {total_found} sent via: {', '.join(sent) or 'nothing configured (printed only)'}")
             else:
-                print("  -> already alerted at this price, skipping")
+                print(f"  -> alert {total_found}: already sent at this price, skipping")
     if not dry_run:
         save_state(state)
     if airtable:
@@ -278,15 +314,17 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--dry-run", action="store_true", help="print only; no alerts, no saved state")
     parser.add_argument("--every", type=int, metavar="MINUTES", help="repeat the scan every N minutes")
+    parser.add_argument("--quiet", action="store_true",
+                        help="don't print pick details (for public logs, e.g. GitHub Actions)")
     args = parser.parse_args()
     cfg = load_config()
     if not args.every:
-        scan(cfg, args.dry_run)
+        scan(cfg, args.dry_run, args.quiet)
         return
     if args.every < 30:
         sys.exit("Use --every 30 or more so you don't burn through free Odds API credits.")
     while True:
-        scan(cfg, args.dry_run)
+        scan(cfg, args.dry_run, args.quiet)
         print(f"\nNext scan in {args.every} minutes. Ctrl+C to stop.")
         time.sleep(args.every * 60)
 

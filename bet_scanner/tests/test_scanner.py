@@ -172,3 +172,24 @@ class MatchingTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class EnvConfigTests(unittest.TestCase):
+    def test_config_from_env(self):
+        import os
+        from unittest import mock
+        env = {"ODDS_API_KEY": "k", "NTFY_TOPIC": "bets-x", "AIRTABLE_TOKEN": "pat1",
+               "AIRTABLE_BASE_ID": "appX", "BANKROLL": "250"}
+        with mock.patch.dict(os.environ, env, clear=False):
+            cfg = scanner.config_from_env()
+        self.assertEqual(cfg["odds_api_key"], "k")
+        self.assertEqual(cfg["alerts"]["ntfy_topic"], "bets-x")
+        self.assertEqual(cfg["airtable"], {"token": "pat1", "base_id": "appX", "table_name": "Bets"})
+        self.assertEqual(cfg["bankroll"], 250.0)
+        self.assertEqual(cfg["edge_threshold"], 0.04)  # defaults kept
+
+    def test_no_env_key_means_no_env_config(self):
+        import os
+        from unittest import mock
+        with mock.patch.dict(os.environ, {"ODDS_API_KEY": ""}, clear=False):
+            self.assertIsNone(scanner.config_from_env())
