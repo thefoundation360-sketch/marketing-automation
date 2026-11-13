@@ -136,6 +136,13 @@ class ParsingTests(unittest.TestCase):
         self.assertEqual(len(polymarket.parse_event(ev)), 1)
 
 
+class OverUnderFilterTests(unittest.TestCase):
+    def test_over_under_outcomes_skipped(self):
+        ev = poly_event(question="Chiefs season wins")
+        ev["markets"][0]["outcomes"] = '["O 11.5", "U 11.5"]'
+        self.assertEqual(polymarket.parse_event(ev), [])
+
+
 class MatchingTests(unittest.TestCase):
     def test_team_matches(self):
         self.assertTrue(scanner.team_matches("Mavericks", "Dallas Mavericks"))

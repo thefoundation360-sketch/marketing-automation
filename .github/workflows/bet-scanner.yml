@@ -48,16 +48,20 @@ jobs:
           fi
 
       - uses: actions/checkout@v4
-        if: steps.check.outputs.ready == 'true'
 
       - uses: actions/setup-python@v5
-        if: steps.check.outputs.ready == 'true'
         with:
           python-version: "3.12"
 
       - name: Install
-        if: steps.check.outputs.ready == 'true'
         run: pip install -q -r requirements.txt
+
+      # Health check: confirms Polymarket (and the Odds API, once the key is set) return data.
+      # Runs on manual "Run workflow" clicks and before setup is finished. Never prints picks.
+      - name: Health check
+        if: github.event_name == 'workflow_dispatch' || steps.check.outputs.ready != 'true'
+        continue-on-error: ${{ steps.check.outputs.ready == 'true' }}
+        run: python diagnose.py
 
       # Remembers which alerts were already sent, so you don't get duplicates.
       - name: Restore alert history
