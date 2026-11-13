@@ -249,3 +249,26 @@ class GithubAlertTests(unittest.TestCase):
     def test_disabled_outside_actions(self):
         import alerts
         self.assertFalse(alerts.github_issue_alert("t", "b", env={}, session=self.Session(True)))
+
+
+class SecureAlertTests(unittest.TestCase):
+    def test_roundtrip_and_public_log_hides_text(self):
+        import io
+        import contextlib
+        import secure_alerts
+        from cryptography.hazmat.primitives import serialization
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        k = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        pub = k.public_key().public_bytes(serialization.Encoding.PEM,
+                                          serialization.PublicFormat.SubjectPublicKeyInfo)
+        priv = k.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
+                               serialization.NoEncryption())
+        line = secure_alerts.encrypt_alert("BET: Mavericks", "Buy at 33%", pub)
+        self.assertNotIn("Mavericks", line)
+        log = f"noise\n2026-11-13T00:00Z {line}\nmore noise\n{line}\n"
+        self.assertEqual(secure_alerts.decrypt_lines(log, priv),
+                         [{"title": "BET: Mavericks", "body": "Buy at 33%"}])
+
+    def test_disabled_without_flag(self):
+        import secure_alerts
+        self.assertFalse(secure_alerts.log_encrypted_alert("t", "b", env={}))

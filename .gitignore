@@ -8,3 +8,4 @@ __pycache__/
 .venv/
 bet_scanner/config.json
 bet_scanner/data/
+*private_key*

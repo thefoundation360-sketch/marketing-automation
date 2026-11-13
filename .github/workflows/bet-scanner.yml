@@ -11,10 +11,10 @@ name: Bet Scanner
 
 on:
   schedule:
-    # 11:07am, 3:07pm, 6:07pm Central (standard time). ESPN odds are free; with an Odds API key
+    # ~11:23am, 3:23pm, 6:23pm Central (standard time). ESPN odds are free; with an Odds API key
     # this uses ~270 of 500 free credits/month.
-    - cron: "7 17,21 * * *"
-    - cron: "7 0 * * *"
+    - cron: "23 17,21 * * *"
+    - cron: "23 0 * * *"
   workflow_dispatch:      # "Run workflow" button for a manual scan
     inputs:
       test_alert:
@@ -37,6 +37,9 @@ jobs:
     env:
       # Alerts as GitHub notifications. Only posts when the repo is PRIVATE.
       ALERT_GITHUB_ISSUES: "true"
+      # Alerts printed to the (public) log only in encrypted form; a private scheduled task
+      # decrypts them and emails them to you.
+      ALERT_ENCRYPT_LOG: "true"
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
       NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
