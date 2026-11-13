@@ -1,0 +1,85 @@
+name: Bet Scanner
+
+# Runs the Polymarket-vs-sportsbook scanner on GitHub's servers. No laptop needed.
+# Alerts go to your phone (ntfy) and rows go to Airtable. It never places bets.
+#
+# Required secret: ODDS_API_KEY
+# Optional secrets: NTFY_TOPIC, AIRTABLE_TOKEN, AIRTABLE_BASE_ID, BANKROLL, MAKE_WEBHOOK_URL
+# (Settings -> Secrets and variables -> Actions -> New repository secret)
+
+on:
+  schedule:
+    # 11:07am, 3:07pm, 6:07pm Central (standard time). 3 scans x 3 sports = ~270 of 500 free credits/month.
+    - cron: "7 17,21 * * *"
+    - cron: "7 0 * * *"
+  workflow_dispatch: {}   # "Run workflow" button for a manual scan
+
+concurrency:
+  group: bet-scanner
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+      NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+      AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
+      AIRTABLE_BASE_ID: ${{ secrets.AIRTABLE_BASE_ID }}
+      BANKROLL: ${{ secrets.BANKROLL }}
+      MAKE_WEBHOOK_URL: ${{ secrets.MAKE_WEBHOOK_URL }}
+    defaults:
+      run:
+        working-directory: bet_scanner
+    steps:
+      - name: Check setup
+        id: check
+        working-directory: .
+        run: |
+          if [ -z "$ODDS_API_KEY" ]; then
+            echo "ODDS_API_KEY secret not set yet. Add it under Settings -> Secrets and variables -> Actions."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.check.outputs.ready == 'true'
+
+      - uses: actions/setup-python@v5
+        if: steps.check.outputs.ready == 'true'
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        if: steps.check.outputs.ready == 'true'
+        run: pip install -q -r requirements.txt
+
+      # Remembers which alerts were already sent, so you don't get duplicates.
+      - name: Restore alert history
+        if: steps.check.outputs.ready == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: bet_scanner/data
+          key: bet-scanner-state-${{ github.run_id }}
+          restore-keys: bet-scanner-state-
+
+      - name: Create Airtable table (first run only; safe to repeat)
+        if: steps.check.outputs.ready == 'true' && env.AIRTABLE_TOKEN != '' && env.AIRTABLE_BASE_ID != ''
+        run: python airtable_log.py --setup
+
+      - name: Scan
+        if: steps.check.outputs.ready == 'true'
+        # --quiet keeps pick details out of the logs, because this repo is public.
+        run: python scanner.py --quiet
+
+      - name: Save alert history
+        if: always() && steps.check.outputs.ready == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: bet_scanner/data
+          key: bet-scanner-state-${{ github.run_id }}

@@ -6,3 +6,5 @@ etsy_sync/data/
 __pycache__/
 *.pyc
 .venv/
+bet_scanner/config.json
+bet_scanner/data/
