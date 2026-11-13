@@ -112,6 +112,9 @@ def parse_event(event):
         outcomes = _json_list(m.get("outcomes"))
         if len(outcomes) != 2 or {o.lower() for o in outcomes} == {"yes", "no"}:
             continue
+        # Over/under outcomes like "O 11.5" / "U 11.5" are not team names.
+        if any(re.match(r"^[OU] \d", o.strip()) or re.search(r"\d+\.5", o) for o in outcomes):
+            continue
         prices = [_float(p) for p in _json_list(m.get("outcomePrices"))]
         if len(prices) != 2:
             continue
