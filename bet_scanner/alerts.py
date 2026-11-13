@@ -13,6 +13,8 @@ from email.message import EmailMessage
 
 import requests
 
+import secure_alerts
+
 GITHUB_API = "https://api.github.com"
 _repo_private_cache = {}
 
@@ -52,6 +54,11 @@ def github_issue_alert(title, body, env=None, session=None):
 def send_all(alert_cfg, title, body, payload):
     """Send through every configured channel. Returns a list of channel names that worked."""
     sent = []
+    try:
+        if secure_alerts.log_encrypted_alert(title, body):
+            sent.append("encrypted-log")
+    except Exception as e:  # never let alert encryption break a scan
+        print(f"  ! Encrypted log alert failed: {type(e).__name__}")
     try:
         if github_issue_alert(title, body):
             sent.append("github")
