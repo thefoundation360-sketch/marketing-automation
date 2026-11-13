@@ -15,6 +15,12 @@
   "max_price": 0.75,
   "realert_improvement": 0.02,
 
+  "airtable": {
+    "token": "",
+    "base_id": "",
+    "table_name": "Bets"
+  },
+
   "alerts": {
     "ntfy_topic": "",
     "make_webhook_url": "",

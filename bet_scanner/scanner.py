@@ -23,6 +23,7 @@ from zoneinfo import ZoneInfo
 
 import requests
 
+import airtable_log
 import alerts
 import odds_api
 import polymarket
@@ -47,14 +48,14 @@ SPORT_EMOJI = {"basketball": "🏀", "americanfootball": "🏈", "icehockey": "�
 MAX_START_GAP = timedelta(hours=18)
 
 
-def load_config():
+def load_config(require_odds_key=True):
     if not CONFIG_PATH.exists():
         sys.exit(
-            f"Missing {CONFIG_PATH.name}. Copy config.example.json to config.json and add your "
-            "free Odds API key (see README.md)."
+            f"Missing {CONFIG_PATH.name}. Run `python setup.py` (or copy config.example.json to "
+            "config.json) and add your free Odds API key (see README.md)."
         )
     cfg = json.loads(CONFIG_PATH.read_text())
-    if not cfg.get("odds_api_key") or "PASTE" in cfg["odds_api_key"]:
+    if require_odds_key and (not cfg.get("odds_api_key") or "PASTE" in cfg["odds_api_key"]):
         sys.exit("Add your Odds API key to config.json (free at https://the-odds-api.com).")
     return cfg
 
@@ -214,6 +215,13 @@ def scan(cfg, dry_run=False):
     tz = ZoneInfo(cfg.get("timezone", "America/Chicago"))
     state = load_state()
     total_found = 0
+    price_lookup = {}  # market_key -> current buy price, used to update open Airtable rows
+    airtable = None
+    if not dry_run:
+        try:
+            airtable = airtable_log.client_from_config(cfg)
+        except airtable_log.AirtableError as e:
+            print(f"Airtable disabled: {e}")
     print(f"\n=== Scan {fmt_time(datetime.now(timezone.utc), tz)} ===")
     for sport in cfg.get("sports", []):
         try:
@@ -225,6 +233,9 @@ def scan(cfg, dry_run=False):
             print(f"{sport}: skipped ({e})")
             continue
 
+        for m in markets:
+            for i, price in enumerate(m["buy_prices"]):
+                price_lookup[f"{m['id']}:{i}"] = price
         opps = find_opportunities(cfg, games, markets, sport)
         print(f"{sport}: {len(games)} games, {len(markets)} Polymarket markets, "
               f"{len(opps)} edges. Odds API credits left: {remaining}")
@@ -241,6 +252,12 @@ def scan(cfg, dry_run=False):
                     "message": body,
                 })
                 append_log(opp, tz)
+                if airtable:
+                    try:
+                        airtable.create(airtable_log.opp_to_fields(opp, datetime.now(timezone.utc)))
+                        sent.append("airtable")
+                    except (airtable_log.AirtableError, requests.RequestException) as e:
+                        print(f"  ! Airtable row failed: {e}")
                 state[opp["key"]] = {"price": opp["poly_price"],
                                      "at": datetime.now(timezone.utc).isoformat()}
                 print(f"  -> alerted via: {', '.join(sent) or 'nothing configured (printed only)'}")
@@ -248,6 +265,11 @@ def scan(cfg, dry_run=False):
                 print("  -> already alerted at this price, skipping")
     if not dry_run:
         save_state(state)
+    if airtable:
+        try:
+            print(airtable_log.sync(airtable, price_lookup))
+        except (airtable_log.AirtableError, requests.RequestException) as e:
+            print(f"Airtable sync failed: {e}")
     if total_found == 0:
         print("\nNo edges right now. That's normal. Most scans find nothing.")
 

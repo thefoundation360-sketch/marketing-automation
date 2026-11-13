@@ -24,38 +24,64 @@ First: check injuries. Star out or questionable = SKIP.
 5. It logs every alert to `data/opportunities.csv` and won't re-alert the same bet unless
    the price drops another 2 points.
 
-## Setup (about 15 minutes, one time)
+## Setup (about 10 minutes, one time)
 
-**1. Get a free Odds API key.** Sign up at https://the-odds-api.com (free = 500 credits/month).
+**0. Get the code onto your laptop.** On GitHub, open this repo, switch to the
+`claude/sports-betting-analysis-picks-h7aom0` branch, then click **Code → Download ZIP** and unzip it.
 
-**2. Install Python** (Mac: already installed, or https://www.python.org/downloads/).
-Then in Terminal:
+**1. Install Python** if you don't have it: https://www.python.org/downloads/
+(On Windows, tick **"Add Python to PATH"** during install.)
+
+**2. Start it:**
+- **Mac:** open Terminal, type `bash ` (with a space), drag `start_mac.command` into the window, press Enter.
+- **Windows:** double-click `start_windows.bat`.
+
+The first run installs everything and opens the **setup wizard**, which walks you through:
+1. A free Odds API key (it opens the signup page for you).
+2. Your bankroll.
+3. Phone alerts: it generates a private **ntfy** topic. Install the free ntfy app,
+   subscribe to that topic, and it sends a test alert.
+4. Airtable (optional, recommended). See below.
+5. A test scan that prints results without sending anything.
+
+After that, the same start file just runs the scanner every 3 hours. Re-run the wizard any
+time with `python setup.py`.
+
+## Airtable bet log (automatic)
+
+When Airtable is connected, every scan:
+1. **Adds a row** for each new alert (pick, game, start time, prices, edge, suggested stake, Polymarket link).
+2. **Updates "Latest Price"** on open bets until tip-off, so you can see if you beat the closing price.
+3. **Settles Win/Loss** about 3 hours after the start, using Polymarket's own resolution.
+4. **Fills "Paper Profit"** (what the suggested stake would have made) and **"Profit"** (your real bet).
+
+**Your only job in Airtable:** when you actually bet, tick **Placed?** and type **Stake Placed**
+(and **Price Got** if you paid a different price than the alert). The rest fills itself in.
+
+"Paper Profit" tracks every alert even when you skip it. After about 50 rows it tells you
+whether the system has a real edge before you trust it with more money.
+
+**Connecting it (the wizard asks for these):**
+1. In Airtable, create an empty base called **Betting**. Copy the part of its web address that
+   starts with `app`. That's the **base ID**.
+2. Go to https://airtable.com/create/tokens → **Create token** → add these 4 scopes:
+   `data.records:read`, `data.records:write`, `schema.bases:read`, `schema.bases:write` →
+   under **Access**, add the Betting base → copy the token (starts with `pat`).
+3. Paste both into the wizard. It creates a **Bets** table with every field automatically.
+   (Manual alternative: put them in `config.json` under `airtable`, then run
+   `python airtable_log.py --setup`.)
+
+Tip: in Airtable, add a **Summary bar** (sum of Paper Profit and Profit) and a filter
+`Placed? = checked` for your real bets.
+
+### Manual setup (without the wizard)
 ```bash
-cd marketing-automation/bet_scanner
-python3 -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
+cd bet_scanner
+python3 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-cp config.example.json config.json   # Windows: copy config.example.json config.json
-```
-
-**3. Edit `config.json`:**
-- `odds_api_key`: paste your key.
-- `bankroll`: your current balance (update it weekly).
-- Alerts (pick at least one):
-  - **ntfy (easiest, free):** install the **ntfy** app on your phone, subscribe to a
-    hard-to-guess topic like `mecca-bets-7k2q9x`, and put that same name in `ntfy_topic`.
-    Anyone who knows the topic name can read it, so make it random.
-  - **Make.com:** create a scenario with a **Custom webhook** trigger, paste its URL into
-    `make_webhook_url`, then add modules to send an SMS or **add an Airtable row** (fields
-    arrive as `pick`, `poly_price`, `max_price`, `fair_prob`, `edge`, `stake`, `start`, `message`).
-  - **Email:** set `enabled: true` and use a Gmail **app password**
-    (Google Account → Security → App passwords). Never use your real password.
-
-**4. Test it:**
-```bash
+cp config.example.json config.json                    # then edit config.json
 python scanner.py --dry-run
 ```
-This prints what it finds without sending anything.
 
 ## Daily use
 ```bash
@@ -78,8 +104,8 @@ The scan prints how many credits are left.
 1. Check injuries for both teams. Star out or questionable = skip.
 2. Open Polymarket and use a **Limit** order at or below the "Buy only at" price.
 3. Bet the stake shown. Not more.
-4. After the game, fill in `placed_stake`, `price_got`, `result_win_loss`, and `profit` in
-   `data/opportunities.csv` (it opens in Excel, Numbers, or Google Sheets).
+4. In Airtable, tick **Placed?** and enter **Stake Placed**. Results and profit fill in automatically.
+   (No Airtable? Every alert is also saved in `data/opportunities.csv`.)
 
 ## Honest limits
 - **Most scans find nothing.** That's the system working: it only flags real gaps.
